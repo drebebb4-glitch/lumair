@@ -1,0 +1,81 @@
+{
+  "updated": "2026-10-28T07:30:00Z",
+  "articles": [
+    {
+      "kicker": "PARTIKULAT",
+      "title": "PM2.5: Musuh Halus yang Menembus Paru",
+      "teaser": "Seribu kali lebih tipis dari milimeter — cukup untuk melewati pertahanan tubuh dan masuk ke dalam darah.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/Delhi_air_pollution_2019.jpg/1280px-Delhi_air_pollution_2019.jpg",
+      "credit": "Prami.ap90, CC BY-SA 4.0 — Wikimedia Commons",
+      "body": [
+        "Di kota-kota besar Indonesia, musim kemarau sering membawa langit keruh seperti pada foto di atas. Yang membuatnya berbahaya bukan sekadar tampaknya, melainkan partikel yang melayang di dalamnya — terutama PM2.5, partikel berdiameter di bawah 2,5 mikrometer. Bandingkan: satu helai rambut manusia berdiameter sekitar 70 mikrometer. PM2.5 lebih tipis tiga puluh kali lipat.",
+        "Ukuran sekecil itu mengubah segalanya. Saat kita menarik napas, pertahanan alami di hidung dan tenggorokan mampu menyaring partikel kasar, tetapi PM2.5 lolos melewatinya — hingga jauh ke dalam alveoli paru, lalu masuk ke aliran darah. Di dalam tubuh, partikel ini dikaitkan dengan risiko asma, penyakit jantung, stroke, hingga gangguan pernapasan pada anak-anak.",
+        "Sumber utamanya ada di sekitar kita: asap knalpot kendaraan, pembakaran sampah di sore hari, asap rokok, dan emisi industri. Karena tidak terlihat mata, satu-satunya cara memantau adalah lewat angka — itulah fungsi pengukur kualitas udara dan aplikasi seperti LUMAIR.",
+        "Organisasi Kesehatan Dunia (WHO) menetapkan batas aman rata-rata tahunan PM2.5 sebesar 5 mikrogram per meter kubik — sebagian besar kota Indonesia melampaui angka itu setiap hari. Memahami angka ini adalah langkah pertama sebelum melangkah ke cara melindungi diri di artikel berikutnya."
+      ]
+    },
+    {
+      "kicker": "SKALA",
+      "title": "Panduan Membaca Angka AQI",
+      "teaser": "Satu angka, enam warna, dan arti pentingnya untuk keputusan harianmu — dari jendela tetap tertutup hingga batalnya olahraga pagi.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/67/Air_Monitoring_station%2C_Reno%2C_Nevada.jpg/1280px-Air_Monitoring_station%2C_Reno%2C_Nevada.jpg",
+      "credit": "brewbooks, CC BY-SA 2.0 — Wikimedia Commons",
+      "body": [
+        "Alat di foto di atas adalah salah satu stasiun pemantauan kualitas udara yang bekerja tanpa henti, dua puluh empat jam sehari. Datanya kemudian dirangkum menjadi satu angka yang mudah dibaca: Indeks Kualitas Udara, atau AQI.",
+        "Skala US AQI yang dipakai LUMAIR berjalan dari 0 sampai 500, terbagi dalam enam kategori: hijau (0–50, baik), kuning (51–100, sedang), oranye (101–150, tidak sehat untuk kelompok sensitif), merah (151–200, tidak sehat), ungu (201–300, sangat tidak sehat), dan maroon (300+, berbahaya).",
+        "Cara membacanya sederhana: semakin tinggi angkanya, semakin banyak orang yang perlu beradaptasi. Di zona hijau dan kuning, aktivitas berjalan seperti biasa. Masuk zona oranye, anak-anak, lansia, dan penderita penyakit pernapasan mulai perlu berhati-hati. Zona merah ke atas, proteksi seperti masker N95 dan membatasi aktivitas di luar ruangan menjadi kebutuhan, bukan pilihan.",
+        "LUMAIR memakai standar AS ini agar datanya sebanding dengan aplikasi global dan catatan riset internasional — sehingga angka yang kamu lihat pagi ini bisa langsung dibandingkan dengan kota mana pun di dunia."
+      ]
+    },
+    {
+      "kicker": "PROTEKSI",
+      "title": "Masker Kain Tidak Cukup: Kapan Perlu N95",
+      "teaser": "Sembilan puluh lima persen partikel tersaring — angka yang membedakan masker yang bekerja dengan yang sekadar menghangatkan wajah.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/3M_9132_N95_Mask.jpg/1280px-3M_9132_N95_Mask.jpg",
+      "credit": "ASHillocks, CC BY-SA 4.0 — Wikimedia Commons",
+      "body": [
+        "Ketika AQI menembus angka 100, pertanyaannya bukan lagi \"pakai masker atau tidak\", melainkan \"masker apa yang benar\". Jawabannya tercetak di kemasan pada foto di atas: respirator berlabel N95 atau KN95. Tanda N95 berarti masker menyaring setidaknya 95 persen partikel sangat halus — termasuk PM2.5 yang disinggung di artikel pertama.",
+        "Di sisi lain, masker kain dan masker bedah dirancang untuk tujuan berbeda: menahan percikan dan tetesan besar, bukan partikel mikroskopis. PM2.5 melayang melewatinya dengan mudah, sehingga saat polusi memuncak, masker jenis itu memberi rasa aman tanpa perlindungan nyata.",
+        "Yang sama pentingnya dengan memilih masker adalah cara memakainya. Pastikan bagian hidung menempel rapat — celah sedikit saja di sisi masker sudah membuat udara kotor dapat tersedot masuk. Ganti masker setiap delapan jam pemakaian, atau lebih cepat bila ia menjadi lembap atau rusak bentuknya.",
+        "Prioritas perlindungan tertinggi ada pada anak-anak, lansia, dan penderita penyakit pernapasan kronis — kelompok yang paling cepat terdampak saat kualitas udara memburuk."
+      ]
+    },
+    {
+      "kicker": "AKTIVITAS",
+      "title": "Olahraga di Hari Polusi: Kapan Boleh, Kapan Harus Berhenti",
+      "teaser": "Berlari memang menyehatkan, tetapi di udara kotor justru bisa jadi dua kali lebih berisiko. Inilah ambangnya.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Morning_Jogging_%28197426589%29.jpeg/1280px-Morning_Jogging_%28197426589%29.jpeg",
+      "credit": "Wikimedia Commons, CC BY 3.0",
+      "body": [
+        "Tubuh yang berlari menuntut lebih banyak udara. Pada napas biasa, orang dewasa menghirup sekitar enam liter per menit; saat berlari berat, angkanya melonjak sampai seratus liter. Itulah sebabnya berolahraga di udara yang sama bisa berarti menghirup sepuluh hingga dua puluh kali lebih banyak polutan daripada orang yang duduk diam — semakin jauh melangkah, semakin besar dosanya.",
+        "Aturannya bisa disederhanakan. AQI di bawah 100: aman untuk olahraga di luar ruangan. 101–150: tetap bisa jalan, tetapi persingkat durasinya dan hindari rentang pukul 10 hingga 16, ketika ozon permukaan biasanya mencapai puncaknya. Di atas 150: pindahkan latihan ke dalam ruangan sampai udara membaik.",
+        "Perhatikan juga waktunya. Pagi dini hari sering menjadi jendela terbaik saat polusi sedang naik, jauh dari jam sibuk. Dan sebelum lari, sekali cek angka AQI di layar lebih tahu kondisi udara daripada menebak dari warna langit — hari yang terlihat cerah bisa saja menyimpan PM2.5 di atas batas aman."
+      ]
+    },
+    {
+      "kicker": "KELOMPOK RENTAN",
+      "title": "Anak dan Penderita Asma: Lindungi yang Paling Rentan",
+      "teaser": "Paru yang masih kecil menarik udara lebih cepat, dan nyawa yang bergantung pada satu inhaler tak boleh menebak-nebak.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Treating_Kids_with_Asthma_%285%29_%287163885241%29.jpg/1280px-Treating_Kids_with_Asthma_%285%29_%287163885241%29.jpg",
+      "credit": "Foto FDA — Domain Publik, via Wikimedia Commons",
+      "body": [
+        "Anak-anak bernapas lebih cepat daripada orang dewasa dalam proporsi tubuhnya, dan paru mereka yang masih dalam tahap pertumbuhan lebih mudah teriritasi. Yang pada orang dewasa mungkin tak terasa, pada anak bisa memicu batuk berkepanjangan, sesak napas, atau serangan asma. Penderita asma mulai bereaksi bahkan lebih awal — di zona oranye, mulai dari AQI 101.",
+        "Kesiapan adalah kata kuncinya. Untuk penderita asma: selalu sediakan inhaler atau obat pencair di tempat mudah dijangkau, dan mulai tutup jendela rumah ketika AQI naik. Bila tersedia, purifier udara akan membantu menurunkan tingkatan partikel di dalam ruangan.",
+        "Bagi sekolah dan orang tua, kebijakan sederhana berpengaruh besar: saat AQI melewati 150, pindahkan jam istirahat dan olahraga ke dalam ruangan. Anak tidak merasa dihukum — mereka hanya butuh lingkungan yang sama aman seperti yang orang dewasa harapkan untuk dirinya sendiri."
+      ]
+    },
+    {
+      "kicker": "SUMBER EMISI",
+      "title": "Dari Mana Asal Polusi di Kotamu",
+      "teaser": "Di hampir semua kota besar Indonesia, penyumbang terbesar udara kotor bukan pabrik — melainkan kendaraan yang berbaris setiap hari.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0f/Traffic_jam_in_Kuningan%2C_Jakarta%2C_Indonesia.jpg/1280px-Traffic_jam_in_Kuningan%2C_Jakarta%2C_Indonesia.jpg",
+      "credit": "Serenity, CC BY-SA 3.0 — Wikimedia Commons",
+      "body": [
+        "Foto di atas adalah pemandangan harian macet di ibu kota — dan juga wajah paling nyata dari sumber polusi kota. Studi di sejumlah kota Indonesia menempatkan transportasi sebagai penyumbang terbesar, sekitar 40 hingga 60 persen emisi partikulat dan gas nitrogen. Setiap kali mesin menyala dan knalpot mengeluarkan asap, sisa pembakarannya ikut masuk ke udara yang kita hirup.",
+        "Dua penyumbang berikutnya menyusul di belakangnya: pembakaran terbuka — sampah yang dibakar terbuka di musim kemarau, ladang yang dibersihkan dengan cara dibakar setelah panen — serta aktivitas industri dan pembangkit listrik batubara di pinggiran kota.",
+        "Yang membuat polusi semakin terasa adalah kondisi cuaca. Saat kemarau panjang bertemu dengan angin yang tenang, udara kotor terperangkap dekat permukaan tanah tanpa dorongan untuk pergi. Inilah mengapa AQI di banyak kota tidak memburuk sejam dua semalam, tetapi menumpuk bertahap — lalu bertahan buruk berhari-hari sampai hujan akhirnya datang.",
+        "Kabar baiknya: semuanya ini terukur, dan yang terukur bisa ditindaklanjuti. Karena itu data udara harian — termasuk dari aplikasi ini — berguna bukan sekadar sebagai peringatan, tetapi sebagai dasar keputusan, baik untuk menyesuaikan jadwal, memilih rute, maupun menekan penggunaan kendaraan privat di hari-hari terburuk."
+      ]
+    }
+  ]
+}
