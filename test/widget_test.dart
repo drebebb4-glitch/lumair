@@ -66,7 +66,8 @@ void main() {
 
       expect(find.text('Peta Udara'), findsOneWidget);
       expect(find.byType(FlutterMap), findsOneWidget);
-      expect(find.text('AQI 128'), findsWidgets);
+      // Pin lokasi sekarang dot pulse; angka AQI tampil di HUD bawah.
+      expect(find.text('128'), findsWidgets);
       expect(find.text('Jakarta'), findsOneWidget);
     });
   });

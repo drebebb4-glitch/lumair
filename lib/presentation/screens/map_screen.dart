@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/aqi_helper.dart';
 import '../../domain/models/air_quality.dart';
@@ -38,7 +39,8 @@ const _styles = [
   ),
   _BaseMap(
     name: 'Satelit',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    url:
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     subdomains: [],
     credit: '© Esri, Maxar, Earthstar Geographics',
   ),
@@ -54,7 +56,8 @@ const _legend = [
   (350, 'Berbahaya'),
 ];
 
-/// Peta AQI by area: zona warna per kota + pin + legenda + ganti basemap.
+/// Peta AQI by area — modern: HUD kaca mengambang, kontrol zoom,
+/// basemap pills, long-press cek AQI titik mana pun, jadikan beranda.
 class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({super.key});
   @override
@@ -62,7 +65,61 @@ class MapScreen extends ConsumerStatefulWidget {
 }
 
 class _MapScreenState extends ConsumerState<MapScreen> {
+  final MapController _map = MapController();
   int _style = 0;
+  bool _legendOpen = false;
+
+  // Titik yang long-press (probe) — "cek AQI di titik ini".
+  LatLng? _probe;
+  String _probeName = 'Menyari nama tempat…';
+
+  void _zoom(double delta) {
+    final cam = _map.camera;
+    _map.move(cam.center, (cam.zoom + delta).clamp(3.0, 18.0));
+  }
+
+  void _recenterTo(LatLng c, {bool zoomIn = false}) {
+    _map.move(c, zoomIn ? 9 : _map.camera.zoom.clamp(5.0, 10.0));
+  }
+
+  Future<void> _startProbe(LatLng p) async {
+    setState(() {
+      _probe = p;
+      _probeName = 'Menyari nama tempat…';
+    });
+    // Nama tempat via reverse geocoding (web: gak didukung → fallback koordinat).
+    try {
+      final marks = await placemarkFromCoordinates(p.latitude, p.longitude);
+      if (!mounted) return;
+      final m = marks.isNotEmpty ? marks.first : null;
+      final name = m != null &&
+              ((m.locality?.isNotEmpty ?? false) ||
+                  (m.administrativeArea?.isNotEmpty ?? false))
+          ? [m.locality, m.administrativeArea]
+              .where((s) => (s ?? '').isNotEmpty)
+              .join(', ')
+          : '${p.latitude.toStringAsFixed(3)}, ${p.longitude.toStringAsFixed(3)}';
+      setState(() => _probeName = name);
+    } catch (_) {
+      if (mounted) {
+        setState(() =>
+            _probeName = '${p.latitude.toStringAsFixed(3)}, ${p.longitude.toStringAsFixed(3)}');
+      }
+    }
+  }
+
+  void _clearProbe() => setState(() => _probe = null);
+
+  void _setHome({required String name, required double lat, required double lon}) {
+    ref
+        .read(homeLocationProvider.notifier)
+        .set(HomeOverride(name: name, lat: lat, lon: lon));
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Beranda sekarang pakai: $name'),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,18 +132,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         centerTitle: false,
         title: const ScreenTitle(
           title: 'Peta Udara',
-          purpose: 'Kondisi udara kota-kota besar Indonesia',
+          purpose: 'Geser, zoom, atau long-press titik mana pun',
         ),
         actions: [
           IconButton(
             tooltip: 'Cari kota di peta',
             icon: const Icon(Icons.search),
             onPressed: () => _openSearch(context),
-          ),
-          IconButton(
-            tooltip: 'Ganti basemap: ${base.name}',
-            icon: const Icon(Icons.layers_outlined),
-            onPressed: () => setState(() => _style = (_style + 1) % _styles.length),
           ),
         ],
       ),
@@ -106,9 +158,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           return Stack(
             children: [
               FlutterMap(
+                mapController: _map,
                 options: MapOptions(
                   initialCenter: center,
-                  initialZoom: 6,
+                  initialZoom: 5.5,
+                  onLongPress: (_, p) => _startProbe(p),
                 ),
                 children: [
                   TileLayer(
@@ -124,8 +178,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         point: center,
                         radius: 60000,
                         useRadiusInMeter: true,
-                        color: AqiHelper.color(r.usAqi)
-                            .withValues(alpha: 0.22),
+                        color: AqiHelper.color(r.usAqi).withValues(alpha: 0.22),
                         borderColor:
                             AqiHelper.color(r.usAqi).withValues(alpha: 0.7),
                         borderStrokeWidth: 2,
@@ -135,8 +188,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           point: LatLng(c.lat, c.lon),
                           radius: 45000,
                           useRadiusInMeter: true,
-                          color: AqiHelper.color(c.usAqi)
-                              .withValues(alpha: 0.20),
+                          color: AqiHelper.color(c.usAqi).withValues(alpha: 0.20),
                           borderColor:
                               AqiHelper.color(c.usAqi).withValues(alpha: 0.55),
                           borderStrokeWidth: 1.5,
@@ -145,35 +197,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   ),
                   MarkerLayer(
                     markers: [
+                      // Pin lokasi user — lingkaran berdenyut ala map modern.
                       Marker(
                         point: center,
-                        width: 120,
-                        height: 84,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AqiHelper.color(r.usAqi),
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: const [
-                                  BoxShadow(
-                                      blurRadius: 6,
-                                      color: Colors.black26,
-                                      offset: Offset(0, 2)),
-                                ],
-                              ),
-                              child: Text('AQI ${r.usAqi}',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                            Icon(Icons.location_on,
-                                color: AqiHelper.color(r.usAqi), size: 28),
-                          ],
-                        ),
+                        width: 92,
+                        height: 92,
+                        child: const _PulseDot(),
                       ),
                       for (final c in cityList)
                         Marker(
@@ -192,31 +221,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                 lastAqi: c.usAqi,
                               ),
                             ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 7, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AqiHelper.color(c.usAqi),
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                          blurRadius: 4,
-                                          color: Colors.black26,
-                                          offset: Offset(0, 1)),
-                                    ],
-                                  ),
-                                  child: Text('${c.usAqi}',
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11)),
-                                ),
-                                Icon(Icons.location_on,
-                                    color: AqiHelper.color(c.usAqi), size: 20),
-                              ],
+                            child: _AqiBadge(
+                              aqi: c.usAqi,
+                              small: true,
                             ),
                           ),
                         ),
@@ -227,91 +234,102 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             child: GestureDetector(
                               onTap: () => _openFav(context, p),
                               child: const Icon(Icons.location_on,
-                                  color: Colors.blueGrey, size: 36),
+                                  color: Color(0xFF94A3B8), size: 34),
                             ),
                           )),
+                      if (_probe != null)
+                        Marker(
+                          point: _probe!,
+                          width: 34,
+                          height: 34,
+                          child: const _ProbeDot(),
+                        ),
                     ],
                   ),
                 ],
               ),
-              // Legenda + kredit + tombol basemap.
+
+              // ── Basemap pills (kiri atas) ──
+              Positioned(
+                top: 10,
+                left: 10,
+                child: _GlassPills(
+                  labels: [for (final s in _styles) s.name],
+                  active: _style,
+                  onPick: (i) => setState(() => _style = i),
+                ),
+              ),
+
+              // ── Legenda (kanan atas, bisa buka-tutup) ──
               Positioned(
                 top: 10,
                 right: 10,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 132),
-                  child: Card(
-                    margin: EdgeInsets.zero,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 6),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('AQI by area',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 11)),
-                          const SizedBox(height: 3),
-                          for (final e in _legend)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 1),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: BoxDecoration(
-                                      color: AqiHelper.color(e.$1),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Flexible(
-                                    child: Text(e.$2,
-                                        style: const TextStyle(fontSize: 10),
-                                        overflow: TextOverflow.ellipsis),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: _LegendPanel(
+                  open: _legendOpen,
+                  onToggle: () => setState(() => _legendOpen = !_legendOpen),
                 ),
               ),
+
+              // ── Kontrol kanan tengah: zoom ±, daftar ikon ──
+              Positioned(
+                top: 150,
+                right: 10,
+                child: Column(
+                  children: [
+                    _MapFab(
+                      icon: Icons.add,
+                      onTap: () => _zoom(1),
+                    ),
+                    const SizedBox(height: 6),
+                    _MapFab(
+                      icon: Icons.remove,
+                      onTap: () => _zoom(-1),
+                    ),
+                    const SizedBox(height: 6),
+                    _MapFab(
+                      icon: Icons.my_location,
+                      onTap: () => _recenterTo(center, zoomIn: true),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── HUD bawah: status udara sekarang / hasil probe ──
               Positioned(
                 left: 12,
                 right: 12,
-                bottom: 12,
+                bottom: 14,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Card(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      child: ListTile(
-                        dense: true,
-                        leading: Icon(Icons.my_location,
-                            color: AqiHelper.color(r.usAqi)),
-                        title: Text(r.placeName),
-                        subtitle: Text(
-                            'AQI ${r.usAqi} — ${AqiHelper.category(r.usAqi)} • Basemap: ${base.name}'),
-                        trailing: TextButton(
-                          child: const Text('Detail'),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => DetailScreen(reading: r)),
+                    (_probe != null)
+                        ? _ProbeHud(
+                            point: _probe!,
+                            name: _probeName,
+                            onClose: _clearProbe,
+                          )
+                        : _CurrentHud(
+                            reading: r,
+                            basemapName: base.name,
+                            onOpenDetail: () => _openDetail(context, r),
+                            onSetHome: () => _setHome(
+                                name: r.placeName, lat: r.lat, lon: r.lon),
                           ),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.center,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(999),
                         ),
+                        child: Text(base.credit,
+                            style: TextStyle(
+                                fontSize: 9.5, color: Colors.grey.shade300)),
                       ),
                     ),
-                    Text(base.credit,
-                        style: TextStyle(
-                            fontSize: 10, color: Colors.grey.shade600)),
                   ],
                 ),
               ),
@@ -319,6 +337,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           );
         },
       ),
+    );
+  }
+
+  /// AQI live untuk titik probe dihitung di dalam _ProbeHud
+  /// (watch placeAqiProvider.FavoritePlace) — gak perlu provider tambahan.
+
+  void _openDetail(BuildContext context, AirQualityReading r) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => DetailScreen(reading: r)),
     );
   }
 
@@ -449,7 +477,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   }
                 },
                 decoration: const InputDecoration(
-                  hintText: 'mis. Bandung, Medan…',
+                  hintText: 'mis. bandung, medan…',
                   contentPadding:
                       EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
@@ -503,6 +531,561 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Komponen kaca mengambang ala peta premium
+// ---------------------------------------------------------------------------
+
+class _GlassStack extends StatelessWidget {
+  final Widget? child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  final Color? accent;
+
+  const _GlassStack(
+      {this.child,
+      this.padding = const EdgeInsets.all(10),
+      this.radius = 14,
+      this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: accent != null
+            ? accent!.withValues(alpha: 0.12)
+            : Colors.black.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+            color: (accent ?? Colors.white).withValues(alpha: accent != null ? 0.45 : 0.14)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _MapFab extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _MapFab({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.45),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          ),
+          child: Icon(icon, size: 20, color: const Color(0xFFE2E8F0)),
+        ),
+      ),
+    );
+  }
+}
+
+/// Grup pill glass pilih basemap: [Standar | Satelit | Humanitarian].
+class _GlassPills extends StatelessWidget {
+  final List<String> labels;
+  final int active;
+  final ValueChanged<int> onPick;
+  const _GlassPills({required this.labels, required this.active, required this.onPick});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < labels.length; i++) ...[
+            const SizedBox(width: 2),
+            InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () => onPick(i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: i == active
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(labels[i],
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: i == active
+                            ? const Color(0xFFE2E8F0)
+                            : Colors.grey.shade400)),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Legenda AQI yang bisa dicompile tutup-buka.
+class _LegendPanel extends StatelessWidget {
+  final bool open;
+  final VoidCallback onToggle;
+  const _LegendPanel({required this.open, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return _GlassStack(
+      accent: null,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: open
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: onToggle,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.format_list_bulleted,
+                          size: 13, color: Color(0xFF94A3B8)),
+                      SizedBox(width: 5),
+                      Text('Skala AQI',
+                          style: TextStyle(
+                              color: Color(0xFFE2E8F0),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                for (final e in _legend)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: AqiHelper.color(e.$1),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(e.$2,
+                            style: const TextStyle(
+                                color: Color(0xFFCBD5E1), fontSize: 10.5)),
+                      ],
+                    ),
+                  ),
+              ],
+            )
+          : InkWell(
+              onTap: onToggle,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.format_list_bulleted,
+                      size: 15, color: Color(0xFF94A3B8)),
+                  SizedBox(width: 5),
+                  Text('Skala AQI',
+                      style: TextStyle(
+                          color: Color(0xFFE2E8F0),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+    );
+  }
+}
+
+/// Pin lokasi user: dot pusat + ring berdenyut (animasi manual,
+/// gak pake AnimationController水温 → aman untuk test).
+class _PulseDot extends StatelessWidget {
+  const _PulseDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF34D399).withValues(alpha: 0.18),
+            ),
+          ),
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF34D399).withValues(alpha: 0.30),
+            ),
+          ),
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF34D399),
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dot probe untuk titik long-press.
+class _ProbeDot extends StatelessWidget {
+  const _ProbeDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+            ),
+          ),
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF38BDF8),
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Badge nilai AQI di atas peta kota.
+class _AqiBadge extends StatelessWidget {
+  final int aqi;
+  final bool small;
+  const _AqiBadge({required this.aqi, this.small = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: EdgeInsets.symmetric(
+              horizontal: small ? 7 : 10, vertical: small ? 2 : 4),
+          decoration: BoxDecoration(
+            color: AqiHelper.color(aqi),
+            borderRadius: BorderRadius.circular(small ? 10 : 14),
+            boxShadow: const [
+              BoxShadow(blurRadius: 5, color: Colors.black26, offset: Offset(0, 2))
+            ],
+          ),
+          child: Text('AQI $aqi',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: small ? 11 : 13)),
+        ),
+        Icon(Icons.location_on, color: AqiHelper.color(aqi), size: small ? 20 : 28),
+      ],
+    );
+  }
+}
+
+/// HUD bawah — status udara sekarang.
+class _CurrentHud extends StatelessWidget {
+  final AirQualityReading reading;
+  final String basemapName;
+  final VoidCallback onOpenDetail;
+  final VoidCallback onSetHome;
+  const _CurrentHud({
+    required this.reading,
+    required this.basemapName,
+    required this.onOpenDetail,
+    required this.onSetHome,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final r = reading;
+    final c = AqiHelper.color(r.usAqi);
+    return _GlassStack(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      radius: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: c.withValues(alpha: 0.5)),
+                ),
+                child: Center(
+                    child: Text('${r.usAqi}',
+                        style: TextStyle(
+                            color: c,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14))),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(r.placeName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Color(0xFFE2E8F0),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14)),
+                    Text(
+                        '${AqiHelper.category(r.usAqi)} • ${AqiHelper.headline(r.usAqi)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.55),
+                            fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: onSetHome,
+                  icon: const Icon(Icons.push_pin_outlined, size: 16),
+                  label: const Text('Jadikan Beranda',
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          TextStyle(color: Color(0xFFE2E8F0), fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    side: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.2)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: onOpenDetail,
+                  icon: const Icon(Icons.insights_outlined, size: 16),
+                  label: const Text('Detail',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12)),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// HUD bawah — hasil probe long-press.
+class _ProbeHud extends ConsumerWidget {
+  final LatLng point;
+  final String name;
+  final VoidCallback onClose;
+  const _ProbeHud({
+    required this.point,
+    required this.name,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final place = FavoritePlace(
+      id: 'probe-${point.latitude.toStringAsFixed(4)}-${point.longitude.toStringAsFixed(4)}',
+      name: name,
+      lat: point.latitude,
+      lon: point.longitude,
+    );
+    final live = ref.watch(placeAqiProvider(place));
+    final reading = live.maybeWhen(data: (r) => r, orElse: () => null);
+    final c = reading != null ? AqiHelper.color(reading.usAqi) : null;
+
+    return _GlassStack(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      radius: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: c?.withValues(alpha: 0.2) ??
+                      Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: c?.withValues(alpha: 0.5) ??
+                          Colors.white.withValues(alpha: 0.2)),
+                ),
+                child: Center(
+                    child: reading != null
+                        ? Text('${reading.usAqi}',
+                            style: TextStyle(
+                                color: c,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14))
+                        : const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2))),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.travel_explore,
+                            size: 14, color: Color(0xFF38BDF8)),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: Color(0xFFE2E8F0),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14)),
+                        ),
+                      ],
+                    ),
+                    Text(
+                        reading != null
+                            ? '${AqiHelper.category(reading.usAqi)} • ${AqiHelper.headline(reading.usAqi)}'
+                            : 'Lagi ngitung AQI titik ini…',
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.55),
+                            fontSize: 11)),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: onClose,
+                borderRadius: BorderRadius.circular(999),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.close,
+                      size: 18, color: Color(0xFF94A3B8)),
+                ),
+              ),
+            ],
+          ),
+          if (reading != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      ref.read(homeLocationProvider.notifier).set(HomeOverride(
+                          name: name,
+                          lat: point.latitude,
+                          lon: point.longitude));
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Beranda sekarang pakai: $name'),
+                        behavior: SnackBarBehavior.floating,
+                      ));
+                    },
+                    icon: const Icon(Icons.push_pin_outlined, size: 16),
+                    label: const Text('Jadikan Beranda',
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            TextStyle(color: Color(0xFFE2E8F0), fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      side: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.2)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => DetailScreen(reading: reading)),
+                    ),
+                    icon: const Icon(Icons.insights_outlined, size: 16),
+                    label: const Text('Detail',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12)),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
