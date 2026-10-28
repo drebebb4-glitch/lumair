@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permissions": [
+    // semua aktivitas git dijalankan tanpa tanya (status, add, commit, push)
+    { "action": "shell", "resource": "git *", "effect": "allow" },
+    // gh CLI (buat cek auth status, dll)
+    { "action": "shell", "resource": "gh *", "effect": "allow" },
+    // verifikasi build Flutter juga bebas tanya
+    { "action": "shell", "resource": "flutter analyze*", "effect": "allow" },
+    { "action": "shell", "resource": "flutter test*", "effect": "allow" }
+  ]
+}
