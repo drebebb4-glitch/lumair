@@ -40,9 +40,13 @@ class ForecastScreen extends ConsumerWidget {
           final maxAqi = worst.aqi;
           final maxPm25 =
               points.map((p) => p.pm25).reduce((a, b) => a > b ? a : b);
-          final avgFirst = points.take(6).map((p) => p.aqi).reduce((a, b) => a + b) /
-              points.take(6).length;
-          final avgLast = points.skip(points.length - 6).map((p) => p.aqi).reduce((a, b) => a + b) /
+          final avgFirst =
+              points.take(6).map((p) => p.aqi).reduce((a, b) => a + b) /
+                  points.take(6).length;
+          final avgLast = points
+                  .skip(points.length - 6)
+                  .map((p) => p.aqi)
+                  .reduce((a, b) => a + b) /
               (points.length > 6 ? points.skip(points.length - 6).length : 6);
 
           return ListView(
@@ -63,23 +67,17 @@ class ForecastScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Text('Tren AQI 24 jam ke depan',
-                            style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 14,
-                                color: Color(0xFFE2E8F0))),
-                        const Spacer(),
-                        Text(
-                          'sentuh garis untuk lihat nilai',
-                          style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.4),
-                              fontSize: 10),
-                          textAlign: TextAlign.right,
-                        ),
-                      ],
-                    ),
+                    const Text('Tren AQI 24 jam ke depan',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: Color(0xFFE2E8F0))),
+                    const SizedBox(height: 2),
+                    Text(
+                        'Angka makin kecil = udara makin bersih. Sentuh garisnya untuk lihat detail.',
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontSize: 11)),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 230,
@@ -89,6 +87,8 @@ class ForecastScreen extends ConsumerWidget {
                           maxPm25: maxPm25,
                           best: best),
                     ),
+                    const SizedBox(height: 6),
+                    const _LegendDots(),
                   ],
                 ),
               ),
@@ -112,7 +112,8 @@ class ForecastScreen extends ConsumerWidget {
                               for (var i = 0; i < days.length; i++) ...[
                                 if (i > 0) const SizedBox(width: 8),
                                 Expanded(
-                                    child: _DayCard(day: days[i], hari: _hari)),
+                                    child: _DayCard(
+                                        day: days[i], hari: _hari, index: i)),
                               ],
                             ],
                           ),
@@ -123,7 +124,7 @@ class ForecastScreen extends ConsumerWidget {
               ),
 
               // ── Semua jam: chips menggeser ──
-              Text('SEMUA JAM (GESER KE SAMPING)',
+              Text('PER JAM, 24 JAM KE DEPAN — GESER KE SAMPING',
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 10.5,
@@ -131,7 +132,7 @@ class ForecastScreen extends ConsumerWidget {
                       letterSpacing: 1.2)),
               const SizedBox(height: 8),
               SizedBox(
-                height: 64,
+                height: 74,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: points.length,
@@ -140,8 +141,8 @@ class ForecastScreen extends ConsumerWidget {
                     final p = points[i];
                     final c = AqiHelper.color(p.aqi);
                     return Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: c.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(14),
@@ -150,16 +151,26 @@ class ForecastScreen extends ConsumerWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(_fmtHour(p.time),
+                          Text(i == 0 ? 'sekarang' : _fmtHour(p.time),
                               style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 10)),
+                                  color: Colors.white
+                                      .withValues(alpha: i == 0 ? 0.85 : 0.6),
+                                  fontSize: 10,
+                                  fontWeight: i == 0
+                                      ? FontWeight.w700
+                                      : FontWeight.w400)),
                           const SizedBox(height: 2),
                           Text('${p.aqi}',
                               style: TextStyle(
                                   color: c,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 15)),
+                          Text(AqiHelper.category(p.aqi),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: c.withValues(alpha: 0.75),
+                                  fontSize: 8)),
                         ],
                       ),
                     );
@@ -169,12 +180,19 @@ class ForecastScreen extends ConsumerWidget {
               const SizedBox(height: 14),
 
               // ── Detail PM2.5 8 jam ke depan ──
-              Text('PARTIKEL PM2.5 8 JAM KE DEPAN (µg/m³)',
+              Text('PM2.5 — PARTIKEL HALUS, 8 JAM KE DEPAN (µg/m³)',
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 10.5,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2)),
+              const SizedBox(height: 4),
+              Text(
+                  'PM2.5 adalah partikel paling berbahaya karena bisa masuk ke paru dan darah. Bar makin panjang = makin banyak partikel di udara.',
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.45),
+                      fontSize: 11,
+                      height: 1.4)),
               const SizedBox(height: 8),
               GlassCard(
                 radius: 18,
@@ -184,16 +202,72 @@ class ForecastScreen extends ConsumerWidget {
                   children: [
                     for (var i = 0; i < points.take(8).length; i++)
                       _PmRow(
-                          point: points[i],
-                          maxPm25: maxPm25 > 0 ? maxPm25 : 1),
+                          point: points[i], maxPm25: maxPm25 > 0 ? maxPm25 : 1),
                   ],
                 ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Skala US AQI 0–500 — standar internasional yang juga dipakai '
+                'aplikasi kualitas udara global. Prakiraan diperbarui otomatis '
+                'setiap kali layar ini dibuka.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    fontSize: 10.5,
+                    height: 1.5),
               ),
               const SizedBox(height: 8),
             ],
           );
         },
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Legenda warna kategori AQI
+// ---------------------------------------------------------------------------
+
+/// Deret titik warna + nama kategori — biar warna di grafik langsung kebaca.
+class _LegendDots extends StatelessWidget {
+  const _LegendDots();
+
+  @override
+  Widget build(BuildContext context) {
+    final cats = [
+      (50, 'Baik'),
+      (100, 'Sedang'),
+      (150, 'Sensitif'),
+      (200, 'Tidak Sehat'),
+      (300, 'Sangat Buruk'),
+      (500, 'Berbahaya'),
+    ];
+    return Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      children: [
+        for (final (max, name) in cats)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: AqiHelper.color(max),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(name,
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 9.5)),
+            ],
+          ),
+      ],
     );
   }
 }
@@ -214,18 +288,22 @@ class _LineChart24 extends StatelessWidget {
     required this.best,
   });
 
-  Widget _hourLabel(ForecastPoint p, {bool bold = false}) => Column(
+  Widget _hourLabel(ForecastPoint p, {bool bold = false, bool now = false}) =>
+      Column(
         children: [
           Text(p.aqi.toString(),
               style: TextStyle(
                   fontSize: 9,
                   fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
                   color: AqiHelper.color(p.aqi))),
-          Text(ForecastScreen._fmtHour(p.time),
+          Text(now ? 'sekarang' : ForecastScreen._fmtHour(p.time),
               maxLines: 1,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 9.5)),
+                  color: now
+                      ? Colors.white.withValues(alpha: 0.85)
+                      : Colors.white.withValues(alpha: 0.6),
+                  fontSize: 9.5,
+                  fontWeight: now ? FontWeight.w700 : FontWeight.w400)),
         ],
       );
 
@@ -248,7 +326,7 @@ class _LineChart24 extends StatelessWidget {
           final p = points[i];
           final c = AqiHelper.color(p.aqi);
           return LineTooltipItem(
-            '${ForecastScreen._fmtHour(p.time)}\nAQI ${p.aqi} • PM2.5 ${p.pm25.toStringAsFixed(1)}',
+            '${ForecastScreen._fmtHour(p.time)}\nAQI ${p.aqi} — ${AqiHelper.category(p.aqi)}\nPM2.5 ${p.pm25.toStringAsFixed(1)} µg/m³',
             TextStyle(
               color: c,
               fontWeight: FontWeight.w800,
@@ -260,8 +338,7 @@ class _LineChart24 extends StatelessWidget {
       ),
       getTouchedSpotIndicator: (bar, indexes) => indexes.map((i) {
         return TouchedSpotIndicatorData(
-          FlLine(
-              color: Colors.white.withValues(alpha: 0.35), strokeWidth: 1),
+          FlLine(color: Colors.white.withValues(alpha: 0.35), strokeWidth: 1),
           FlDotData(
             show: true,
             getDotPainter: (spot, percent, barChartBarData, index) =>
@@ -317,8 +394,10 @@ class _LineChart24 extends StatelessWidget {
           ),
         ),
         titlesData: FlTitlesData(
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -327,12 +406,11 @@ class _LineChart24 extends StatelessWidget {
               getTitlesWidget: (v, meta) => Text(
                 v.toInt().toString(),
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontSize: 9.5),
+                    color: Colors.white.withValues(alpha: 0.45), fontSize: 9.5),
               ),
             ),
           ),
-          // Jam宏观: tampil di 5 posisi saja, single line.
+          // Label waktu tampil di 5 posisi saja, single line — titik pertama "sekarang".
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -342,7 +420,8 @@ class _LineChart24 extends StatelessWidget {
                 final i = v.toInt();
                 if (i < 0 || i >= points.length) return const SizedBox.shrink();
                 if (i % step != 0) return const SizedBox.shrink();
-                return _hourLabel(points[i], bold: i == points.length - 1);
+                return _hourLabel(points[i],
+                    bold: i == points.length - 1, now: i == 0);
               },
             ),
           ),
@@ -387,17 +466,36 @@ class _InsightBanner extends StatelessWidget {
   String _fmt(DateTime t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
-  (IconData, String, Color) get _trend {
+  (IconData, String, String, Color) get _trend {
     final diff = avgLast - avgFirst;
-    if (diff > 8) return (Icons.trending_up, 'BuruK — makin parah', const Color(0xFFF87171));
-    if (diff < -8) return (Icons.trending_down, 'Perbaik — makin segar', const Color(0xFF34D399));
-    return (Icons.trending_flat, 'Cukup stabil', const Color(0xFFFBBF24));
+    if (diff > 8) {
+      return (
+        Icons.trending_up,
+        'Udara makin buruk',
+        'Siapkan masker dan tunda aktivitas luar ruangan.',
+        const Color(0xFFF87171)
+      );
+    }
+    if (diff < -8) {
+      return (
+        Icons.trending_down,
+        'Udara makin bersih',
+        'Makin lama makin segar — cocok buat agenda luar ruangan.',
+        const Color(0xFF34D399)
+      );
+    }
+    return (
+      Icons.trending_flat,
+      'Cukup stabil',
+      'Kondisi hari ini kemungkinan berlanjut sepanjang hari.',
+      const Color(0xFFFBBF24)
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final trendColor = _trend.$3;
-    final iconC = _trend.$1;
+    final t = _trend;
+    final trendColor = t.$4;
     return GlassCard(
       radius: 20,
       gradient: LinearGradient(
@@ -413,13 +511,13 @@ class _InsightBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(iconC, color: trendColor, size: 20),
+              Icon(t.$1, color: trendColor, size: 20),
               const SizedBox(width: 8),
-              Text(_trend.$2,
+              Text(t.$2,
                   style: TextStyle(
                       color: trendColor,
                       fontWeight: FontWeight.w800,
-                      fontSize: 13.5)),
+                      fontSize: 14)),
               const Spacer(),
               Text(
                 '${avgFirst.toStringAsFixed(0)} → ${avgLast.toStringAsFixed(0)}',
@@ -430,33 +528,75 @@ class _InsightBanner extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          Text.rich(
+          const SizedBox(height: 3),
+          Text(t.$3,
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5)),
+          const SizedBox(height: 12),
+          _RecommendRow(
+            icon: Icons.wb_sunny_outlined,
+            label: 'Jam terbaik buat keluar:',
+            time: _fmt(best.time),
+            point: best,
+            tail: ' — pas buat olahraga atau urusan luar.',
+          ),
+          const SizedBox(height: 8),
+          _RecommendRow(
+            icon: Icons.masks_rounded,
+            label: 'Paling kotor sekitar jam',
+            time: _fmt(worst.time),
+            point: worst,
+            tail: ' — kalau bisa, tahan dulu di dalam ruangan.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Satu baris rekomendasi: ikon + teks dengan angka berwarna kategori AQI.
+class _RecommendRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String time;
+  final ForecastPoint point;
+  final String tail;
+  const _RecommendRow({
+    required this.icon,
+    required this.label,
+    required this.time,
+    required this.point,
+    required this.tail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AqiHelper.color(point.aqi);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 15, color: c),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text.rich(
             TextSpan(
               style: const TextStyle(
                   color: Color(0xFFE2E8F0), fontSize: 12.5, height: 1.5),
               children: [
-                const TextSpan(text: '24 jam ke depan: salah satu jam yang udara terbuangnya paling baik, '),
+                TextSpan(text: '$label '),
                 TextSpan(
-                    text: _fmt(best.time),
-                    style: TextStyle(
-                        color: AqiHelper.color(best.aqi),
-                        fontWeight: FontWeight.w800)),
+                    text: time,
+                    style: TextStyle(color: c, fontWeight: FontWeight.w800)),
+                TextSpan(text: ' (AQI ${point.aqi}'),
                 TextSpan(
-                    text: ' (AQI ${best.aqi}) — manfaatin buat keluar rumah / olahraga. '),
-                TextSpan(
-                    text: 'Hindari keluar sekitar jam ${_fmt(worst.time)}',
-                    style: TextStyle(
-                        color: AqiHelper.color(worst.aqi),
-                        fontWeight: FontWeight.w800)),
-                TextSpan(
-                    text: ' (AQI ${worst.aqi}) — udara terkotori di rentang itu.',
-                ),
+                    text: ', ${AqiHelper.category(point.aqi)}',
+                    style: TextStyle(color: c)),
+                TextSpan(text: ')$tail'),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -468,11 +608,13 @@ class _InsightBanner extends StatelessWidget {
 class _DayCard extends StatelessWidget {
   final DayForecast day;
   final List<String> hari;
-  const _DayCard({required this.day, required this.hari});
+  final int index;
+  const _DayCard({required this.day, required this.hari, required this.index});
 
   @override
   Widget build(BuildContext context) {
     final c = AqiHelper.color(day.maxAqi);
+    final label = index == 0 ? 'Hari ini' : hari[day.day.weekday - 1];
     return GlassCard(
       radius: 16,
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
@@ -486,25 +628,26 @@ class _DayCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(hari[day.day.weekday - 1],
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
+                  color:
+                      Colors.white.withValues(alpha: index == 0 ? 0.8 : 0.55),
                   fontSize: 11,
-                  fontWeight: FontWeight.w600)),
+                  fontWeight: index == 0 ? FontWeight.w800 : FontWeight.w600)),
           const SizedBox(height: 6),
           Text('${day.maxAqi}',
               style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: c)),
+                  fontSize: 22, fontWeight: FontWeight.w800, color: c)),
           Text(AqiHelper.category(day.maxAqi),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: c, fontSize: 10)),
           const SizedBox(height: 4),
           Text('puncak ${day.peakHour}:00',
-              style:
-                  TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 9.5)),
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4), fontSize: 9.5)),
         ],
       ),
     );
@@ -532,8 +675,7 @@ class _PmRow extends StatelessWidget {
             width: 44,
             child: Text(_fmt(point.time),
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55),
-                    fontSize: 11)),
+                    color: Colors.white.withValues(alpha: 0.55), fontSize: 11)),
           ),
           Expanded(
             child: ClipRRect(
@@ -552,7 +694,8 @@ class _PmRow extends StatelessWidget {
             width: 70,
             child: Text(point.pm25.toStringAsFixed(1),
                 textAlign: TextAlign.right,
-                style: TextStyle(color: c, fontSize: 11.5, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    color: c, fontSize: 11.5, fontWeight: FontWeight.w700)),
           ),
           SizedBox(
             width: 62,
