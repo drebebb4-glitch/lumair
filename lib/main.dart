@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,46 +79,255 @@ class _RootGateState extends State<_RootGate> {
   }
 }
 
-/// Splash statis (tanpa timer/animasi — aman test). Teks brand tidak
-/// ditulis di sini supaya asersi test 'LUMAIR' tetap tepat 1x di Beranda.
-class _SplashScreen extends StatelessWidget {
+/// Splash animasi: logo muncul di tengah (scale + fade), background aurora
+/// berputar pelan dengan blob cahaya bergerak, cincin pulse mengembang dari
+/// logo. Tanpa timer — tampil sampai flag onboarding selesai dibaca. Teks
+/// brand tidak ditulis di sini supaya asersi test 'LUMAIR' tetap tepat 1x.
+class _SplashScreen extends StatefulWidget {
   const _SplashScreen();
 
   @override
+  State<_SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<_SplashScreen>
+    with TickerProviderStateMixin {
+  late final AnimationController _intro = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 950),
+  )..forward();
+  late final AnimationController _ambient = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 3200),
+  )..repeat();
+
+  late final Animation<double> _logoScale = CurvedAnimation(
+    parent: _intro,
+    curve: const Interval(0.0, 0.55, curve: Curves.easeOutBack),
+  );
+  late final Animation<double> _logoFade = CurvedAnimation(
+    parent: _intro,
+    curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+  );
+  late final Animation<double> _loaderFade = CurvedAnimation(
+    parent: _intro,
+    curve: const Interval(0.55, 1.0, curve: Curves.easeOut),
+  );
+
+  @override
+  void dispose() {
+    _intro.dispose();
+    _ambient.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (MediaQuery.of(context).disableAnimations) {
+      return const _SplashFrame(
+          logoScale: 1, logoFade: 1, loaderFade: 1, ambient: 0, glow: 0.35);
+    }
     return Scaffold(
       backgroundColor: const Color(0xFF070B14),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(
-              'assets/logo.png',
-              width: 96,
-              height: 96,
-              fit: BoxFit.contain,
-              semanticLabel: 'Logo LUMAIR',
-              errorBuilder: (_, __, ___) => Container(
-                width: 84,
-                height: 84,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
-                  borderRadius: BorderRadius.circular(26),
-                ),
-                child: const Icon(Icons.air, color: Colors.white, size: 44),
+      body: AnimatedBuilder(
+        animation: Listenable.merge([_intro, _ambient]),
+        builder: (context, _) {
+          final t = _ambient.value;
+          return _SplashFrame(
+            logoScale: _logoScale.value,
+            logoFade: _logoFade.value,
+            loaderFade: _loaderFade.value,
+            ambient: t,
+            glow: _splashLerp(0.28, 0.45, (math.sin(t * 2 * math.pi) + 1) / 2),
+          );
+        },
+      ),
+    );
+  }
+}
+
+double _splashLerp(double a, double b, double t) => a + (b - a) * t;
+
+class _SplashFrame extends StatelessWidget {
+  const _SplashFrame({
+    required this.logoScale,
+    required this.logoFade,
+    required this.loaderFade,
+    required this.ambient,
+    required this.glow,
+  });
+
+  final double logoScale;
+  final double logoFade;
+  final double loaderFade;
+  final double ambient;
+  final double glow;
+
+  static double _l(double a, double b, double t) => a + (b - a) * t;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final t = ambient * 2 * math.pi;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF070B14),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Latar dasar: gradasi radial biru gelap ke hampir hitam.
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(0, -0.7),
+                radius: 1.5,
+                colors: [Color(0xFF0C1830), Color(0xFF070B14)],
               ),
             ),
-            const SizedBox(height: 26),
-            const SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2.4, color: Color(0xFF34D399)),
+          ),
+          // Aurora: sapuan warna hijau-biru transparan berputar pelan.
+          Opacity(
+            opacity: 0.9,
+            child: Transform.rotate(
+              angle: ambient * 2 * math.pi,
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: SweepGradient(
+                    colors: [
+                      Color(0x0010B981),
+                      Color(0x2610B981),
+                      Color(0x0010B981),
+                      Color(0x1F0EA5E9),
+                      Color(0x0010B981),
+                    ],
+                    stops: [0.0, 0.25, 0.5, 0.75, 1.0],
+                  ),
+                ),
+              ),
             ),
-          ],
+          ),
+          // Dua blob cahaya yang bergerak lambat bolak-balik.
+          Positioned(
+            top: size.height * 0.14 + math.sin(t) * 26,
+            right: size.width * 0.12 + math.cos(t) * 34,
+            child: _blob(const Color(0x1F34D399), 300),
+          ),
+          Positioned(
+            bottom: size.height * 0.16 + math.cos(t) * 22,
+            left: size.width * 0.08 + math.sin(t) * 30,
+            child: _blob(const Color(0x170EA5E9), 260),
+          ),
+          // Cincin pulse mengembang dari tengah.
+          Center(
+            child: SizedBox(
+              width: 320,
+              height: 320,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  for (var i = 0; i < 3; i++)
+                    _ring((ambient + i / 3) % 1, logoFade),
+                ],
+              ),
+            ),
+          ),
+          // Logo di tengah: scale + fade masuk, lalu float lembut.
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Transform.translate(
+                  offset: Offset(0, math.sin(t) * 7),
+                  child: Transform.scale(
+                    scale: logoScale,
+                    child: Opacity(
+                      opacity: logoFade,
+                      child: _logoWithGlow(),
+                    ),
+                  ),
+                ),
+                Opacity(
+                  opacity: loaderFade,
+                  child: const Padding(
+                    padding: EdgeInsets.only(top: 28),
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.4, color: Color(0xFF34D399)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _logoWithGlow() {
+    return Container(
+      width: 130,
+      height: 130,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [
+          const Color(0xFF34D399).withValues(alpha: glow),
+          const Color(0xFF34D399).withValues(alpha: 0),
+        ]),
+      ),
+      child: Image.asset(
+        'assets/logo.png',
+        width: 96,
+        height: 96,
+        fit: BoxFit.contain,
+        semanticLabel: 'Logo LUMAIR',
+        errorBuilder: (_, __, ___) => Container(
+          width: 84,
+          height: 84,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
+            borderRadius: BorderRadius.circular(26),
+          ),
+          child: const Icon(Icons.air, color: Colors.white, size: 44),
+        ),
+      ),
+    );
+  }
+
+  Widget _blob(Color color, double size) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color,
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _ring(double phase, double fade) {
+    final appear = (phase / 0.08).clamp(0.0, 1.0);
+    final opacity = (1 - phase) * 0.26 * appear * fade;
+    final size = _l(130, 310, phase);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: const Color(0xFF34D399).withValues(alpha: opacity),
+          width: 1.6,
         ),
       ),
     );
