@@ -52,11 +52,11 @@ class ForecastScreen extends ConsumerWidget {
                                 spots: spots,
                                 isCurved: true,
                                 barWidth: 3,
-                                color: Colors.teal,
+                                color: const Color(0xFF34D399),
                                 belowBarData: BarAreaData(
                                   show: true,
-                                  color:
-                                      Colors.teal.withValues(alpha: 0.15),
+                                  color: const Color(0xFF34D399)
+                                      .withValues(alpha: 0.15),
                                 ),
                                 dotData: const FlDotData(show: false),
                               ),

@@ -47,38 +47,51 @@ class _RootNavState extends State<_RootNav> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _index,
-        selectedItemColor: Colors.teal.shade700,
-        unselectedItemColor: Colors.grey.shade600,
-        selectedFontSize: 11,
-        unselectedFontSize: 11,
-        showSelectedLabels: true,
-        showUnselectedLabels: false, // hemat lebar di HP sempit (360px)
-        onTap: (i) => setState(() => _index = i),
-        items: const [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Beranda'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.show_chart_outlined),
-              activeIcon: Icon(Icons.show_chart),
-              label: 'Prakiraan'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.map_outlined),
-              activeIcon: Icon(Icons.map),
-              label: 'Peta'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_border),
-              activeIcon: Icon(Icons.favorite),
-              label: 'Favorit'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.school_outlined),
-              activeIcon: Icon(Icons.school),
-              label: 'Edukasi'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0B1220),
+          border: Border(
+            top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+        ),
+        child: SafeArea(
+          top: false,
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            currentIndex: _index,
+            selectedItemColor: const Color(0xFF34D399),
+            unselectedItemColor: const Color(0xFF64748B),
+            selectedFontSize: 11,
+            unselectedFontSize: 11,
+            showSelectedLabels: true,
+            showUnselectedLabels: false, // hemat lebar di HP sempit (360px)
+            onTap: (i) => setState(() => _index = i),
+            items: const [
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: 'Beranda'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.show_chart_outlined),
+                  activeIcon: Icon(Icons.show_chart),
+                  label: 'Prakiraan'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.map_outlined),
+                  activeIcon: Icon(Icons.map),
+                  label: 'Peta'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.favorite_border),
+                  activeIcon: Icon(Icons.favorite),
+                  label: 'Favorit'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.school_outlined),
+                  activeIcon: Icon(Icons.school),
+                  label: 'Edukasi'),
+            ],
+          ),
+        ),
       ),
     );
   }
