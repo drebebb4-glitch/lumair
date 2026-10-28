@@ -216,4 +216,60 @@ const builtInArticles = [
       'Yang terukur bisa ditindaklanjuti — itu sebabnya data udara harian berguna sebagai dasar keputusan, bukan cuma peringatan.',
     ],
   ),
+  Article(
+    kicker: 'INDOOR',
+    title: 'Rumah Lebih Aman? Bisa — Kalau Dikelola Benar',
+    teaser:
+        'Udara dalam ruangan tidak otomatis bersih — masak, debu, dan VOC ikut menumpuk.',
+    image:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Xiaomi_Smart_Air_Purifier_2S_fan.jpg/1280px-Xiaomi_Smart_Air_Purifier_2S_fan.jpg',
+    credit: 'Wikimedia Commons, CC BY 2.0',
+    body: [
+      'Berlindung di rumah saat AQI memburuk memang tepat, tetapi udara dalam ruangan bisa mendekati udara luar karena memasak tanpa ventilasi, debu, dan asap rokok yang terakumulasi.',
+      'Tiga kuncinya: ventilasi silang saat AQI luar zona hijau, exhaust fan saat memasak, dan purifier berfilter HEPA yang menyala terus di ruang utama.',
+      'Jangan berharap dari pengharum ruangan — ia menutupi bau, bukan membersihkan udara; yang ditambahkannya justru senyawa baru.',
+    ],
+  ),
+  Article(
+    kicker: 'DATA',
+    title: 'Sensor Murah Bisa Dipercaya? Seberapa Akurat Angkamu',
+    teaser:
+        'Sensor laser sekecil kancing — andal untuk tren, bukan untuk satu angka tunggal.',
+    image:
+        'https://upload.wikimedia.org/wikipedia/commons/a/a5/Real-time_Particulate_Matter_Sensor_%288118c90f-2657-48ca-8191-fc77de7a47cf%29.jpg',
+    credit: 'Foto US EPA — Domain Publik',
+    body: [
+      'Sensor optik bekerja dengan laser dan fotodioda: partikel yang lewat memantulkan cahaya, dan dari frekuensi pantulan itulah PM2.5 dihitung.',
+      'Kekuatannya di jumlah: data dari ribuan stasiun komunitas saling meniadakan kesalahan kecilnya, sehingga tren naik-turunnya hampir setara stasiun referensi.',
+      'Kelemahannya: kelembapan tinggi membuat pembacaan terlalu tinggi, umur alat umumnya 2–3 tahun, dan tidak semua model memisahkan PM1.0/PM2.5/PM10. Rata-rata beberapa stasiun terdekat jauh lebih aman daripada satu angka tunggal.',
+    ],
+  ),
+  Article(
+    kicker: 'ATMOSFIR',
+    title: 'Kenapa Polusi Bisa Kabur ke Langit Tapi Balik Lagi',
+    teaser:
+        'Lapisan udara hangat di atas kota itu seperti penutup panci: polutan terkurung di bawahnya.',
+    image:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/df/Smog_Layer_Over_Upstate_New_York_%2C_Image_of_the_Day_DVIDS695291.jpg/1280px-Smog_Layer_Over_Upstate_New_York_%2C_Image_of_the_Day_DVIDS695291.jpg',
+    credit: 'Foto NASA/DVIDS — Domain Publik',
+    body: [
+      'Temperature inversion: udara hangat berada di atas udara dingin sehingga udara tidak bisa berputar naik — polutan terkurung di lapisan tipis dekat tanah, seperti uap dalam panci tertutup.',
+      'Inversi terbentuk hampir setiap malam saat tanah mendingin — itulah sebabnya AQI sering paling buruk dini hari hingga pagi buta, lalu turun cepat begitu matahari memecah lapisannya.',
+      'Di kemarau inversi lebih kuat dan minim hujan pembersih; itulah asal-usul musim polusi. Polusi tidak pernah hilang ke langit — ia menunggu cuaca yang tepat untuk pergi.',
+    ],
+  ),
+  Article(
+    kicker: 'CUACA',
+    title: 'Hujan: Deterjen Alami Udara',
+    teaser:
+        'Butir hujan menangkap partikel yang melayang — udara dibersihkan dari atas.',
+    image:
+        'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/Heavy_Rain_In_Cebu.jpg/1280px-Heavy_Rain_In_Cebu.jpg',
+    credit: 'Wikimedia Commons — Domain Publik',
+    body: [
+      'Wet scavenging: tiap butir hujan menabrak jutaan partikel melayang dan membawanya turun ke tanah — pembersihan tanpa listrik dan tanpa filter ganti.',
+      'Hujan deras dan lama menurunkan AQI puluhan angka dalam hitungan jam; gerimis tipis minim pengaruh karena butirnya terlalu sedikit.',
+      'Batasnya: hujan membersihkan partikel, bukan gas, dan debu akan kembali melayang begitu jalan mengering. Karena itu udara membaik satu-dua hari setelah hujan, lalu naik lagi perlahan.',
+    ],
+  ),
 ];

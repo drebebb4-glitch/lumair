@@ -200,20 +200,7 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
                   ],
                 ),
               ),
-              data: (result) => Column(
-                children: [
-                  for (final a in result.articles) _ArticleCard(article: a),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Artikel dimuat dari repositori LUMAIR. '
-                    'Foto dokumentasi Wikimedia Commons, sesuai lisensinya masing-masing.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        fontSize: 11),
-                  ),
-                ],
-              ),
+              data: (result) => _VariedFeed(result: result),
             ),
           ],
         ),
@@ -281,72 +268,195 @@ class _ArticlesStatus extends StatelessWidget {
   }
 }
 
-/// Kartu artikel bergaya berita: foto di atas, judul + teaser di bawah.
-class _ArticleCard extends StatelessWidget {
-  final Article article;
-  const _ArticleCard({required this.article});
+// ---------------------------------------------------------------------------
+// Feed bervariasi — bukan kotak seragam
+// ---------------------------------------------------------------------------
 
-  static const _headers = {
-    'User-Agent': 'LumairApp/1.0 (educational; contact dev@lumair.id)',
-  };
+/// Header User-Agent untuk memuat foto Wikimedia.
+const _imgHeaders = {
+  'User-Agent': 'LumairApp/1.0 (educational; contact dev@lumair.id)',
+};
+
+/// Palet aksen kicker — berputar per urutan artikel agar feed tidak monoton.
+const _accentCycle = [
+  Color(0xFF10B981), // emerald
+  Color(0xFF38BDF8), // sky
+  Color(0xFFFBBF24), // amber
+  Color(0xFFFB7185), // rose
+  Color(0xFFA78BFA), // violet
+];
+
+Color _accentFor(int i) => _accentCycle[i % _accentCycle.length];
+
+void _openArticle(BuildContext context, Article a) => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => _ArticleDetail(article: a)),
+    );
+
+Widget _netImage(String url, {BoxFit fit = BoxFit.cover}) => Image.network(
+      url,
+      fit: fit,
+      headers: _imgHeaders,
+      loadingBuilder: (context, child, progress) =>
+          progress == null ? child : _imgPlaceholder(),
+      errorBuilder: (_, __, ___) => _imgPlaceholder(),
+    );
+
+Widget _imgPlaceholder() => Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF12203A), Color(0xFF0B1220)],
+        ),
+      ),
+      alignment: Alignment.center,
+      child:
+          const Icon(Icons.image_outlined, color: Color(0xFF334155), size: 36),
+    );
+
+/// Feed artikel dengan blok berbeda-beda per posisi:
+/// [0] hero utama → [1,2] mini → [3] editorial → [4,5] tile kembar
+/// → [6] editorial → [7] mini → [8] wide → sisanya mini.
+/// List lebih pendek pun aman — tiap cabang memeriksa panjangnya.
+class _VariedFeed extends StatelessWidget {
+  final ArticlesResult result;
+  const _VariedFeed({required this.result});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: InkWell(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => _ArticleDetail(article: article)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final arts = result.articles;
+    final items = <Widget>[];
+    var i = 0;
+    while (i < arts.length) {
+      if (i == 0) {
+        // ── HERO: artikel utama, foto full-bleed ──
+        items.add(_HeroCard(article: arts[0], accent: _accentFor(0)));
+        items.add(const SizedBox(height: 16));
+        i++;
+      } else if (i == 3 || i == 6) {
+        // ── EDITORIAL: kartu teks tanpa foto, gaya kutipan ──
+        items.add(_EditorialCard(article: arts[i], accent: _accentFor(i)));
+        items.add(const SizedBox(height: 14));
+        i++;
+      } else if (i == 4 && arts.length >= 6) {
+        // ── TILE KEMBAR: dua kartu bersebelahan ──
+        items.add(Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _TileCard(article: arts[4], accent: _accentFor(4))),
+            const SizedBox(width: 10),
+            Expanded(child: _TileCard(article: arts[5], accent: _accentFor(5))),
+          ],
+        ));
+        items.add(const SizedBox(height: 14));
+        i += 2;
+      } else if (i == 8 && arts.length >= 9) {
+        // ── WIDE: kartu lebar dengan foto besar di kiri ──
+        items.add(_WideCard(article: arts[8], accent: _accentFor(8)));
+        items.add(const SizedBox(height: 14));
+        i++;
+      } else {
+        // ── MINI: kartu horizontal kompak ──
+        items.add(_MiniCard(article: arts[i], accent: _accentFor(i)));
+        items.add(const SizedBox(height: 12));
+        i++;
+      }
+    }
+    items.add(const SizedBox(height: 6));
+    items.add(const Text(
+      'Artikel dimuat dari repositori LUMAIR. '
+      'Foto dokumentasi Wikimedia Commons, sesuai lisensinya masing-masing.',
+      textAlign: TextAlign.center,
+      style: TextStyle(color: Color(0x59FFFFFF), fontSize: 11),
+    ));
+    return Column(children: items);
+  }
+}
+
+/// Kartu utama: foto memenuhi kartu, judul di atas gradasi gelap.
+class _HeroCard extends StatelessWidget {
+  final Article article;
+  final Color accent;
+  const _HeroCard({required this.article, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      child: InkWell(
+        onTap: () => _openArticle(context, article),
+        child: SizedBox(
+          height: 236,
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              _ArticleImage(image: article.image),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+              _netImage(article.image),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black54,
+                      Color(0xE6000000),
+                    ],
+                    stops: [0.3, 0.62, 1.0],
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('SOROTAN',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.4)),
+                ),
+              ),
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 14,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(article.kicker,
-                        style: const TextStyle(
-                            color: Color(0xFF10B981),
+                        style: TextStyle(
+                            color: accent,
                             fontSize: 10.5,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.6)),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5),
                     Text(article.title,
-                        style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w700,
-                            height: 1.3)),
-                    const SizedBox(height: 6),
-                    Text(article.teaser,
-                        style: const TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 12.5,
-                            height: 1.45),
                         maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text('Baca selengkapnya',
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.6),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600)),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.chevron_right,
-                            size: 18, color: Color(0xFF94A3B8)),
-                      ],
-                    ),
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            height: 1.25)),
+                    const SizedBox(height: 4),
+                    Text(article.teaser,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.72),
+                            fontSize: 12,
+                            height: 1.4)),
                   ],
                 ),
               ),
@@ -358,38 +468,260 @@ class _ArticleCard extends StatelessWidget {
   }
 }
 
-/// Placeholder + fade-in untuk foto artikel.
-class _ArticleImage extends StatelessWidget {
-  final String image;
-  const _ArticleImage({required this.image});
+/// Kartu mini horizontal: thumbnail di kiri, teks di kanan.
+class _MiniCard extends StatelessWidget {
+  final Article article;
+  final Color accent;
+  const _MiniCard({required this.article, required this.accent});
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: Image.network(
-        image,
-        fit: BoxFit.cover,
-        headers: _ArticleCard._headers,
-        loadingBuilder: (context, child, progress) =>
-            progress == null ? child : _placeholder(),
-        errorBuilder: (_, __, ___) => _placeholder(),
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: InkWell(
+        onTap: () => _openArticle(context, article),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 94,
+                  height: 80,
+                  child: _netImage(article.image),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(article.kicker,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: accent,
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.4)),
+                    const SizedBox(height: 3),
+                    Text(article.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            height: 1.25)),
+                    const SizedBox(height: 3),
+                    Text(article.teaser,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontSize: 11)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right,
+                  size: 18, color: Color(0xFF94A3B8)),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
 
-  Widget _placeholder() => Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF12203A), Color(0xFF0B1220)],
+/// Kartu editorial: tanpa foto, gaya kutipan dengan aksen di kiri.
+class _EditorialCard extends StatelessWidget {
+  final Article article;
+  final Color accent;
+  const _EditorialCard({required this.article, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.format_quote_rounded, color: accent, size: 20),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(article.kicker,
+                    style: TextStyle(
+                        color: accent,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.6)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(article.title,
+              style: const TextStyle(
+                  fontSize: 16.5, fontWeight: FontWeight.w800, height: 1.3)),
+          const SizedBox(height: 6),
+          Text(article.teaser,
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 12.5,
+                  height: 1.5)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text('BACA SELENGKAPNYA',
+                  style: TextStyle(
+                      color: accent,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2)),
+              const Spacer(),
+              Text('${article.body.length} paragraf',
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      fontSize: 10.5)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tile kecil untuk pasangan kolom ganda: foto atas, teks bawah.
+class _TileCard extends StatelessWidget {
+  final Article article;
+  final Color accent;
+  const _TileCard({required this.article, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: InkWell(
+        onTap: () => _openArticle(context, article),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 4 / 3,
+              child: _netImage(article.image),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(article.kicker,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: accent,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.3)),
+                  const SizedBox(height: 4),
+                  Text(article.title,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          height: 1.3)),
+                  const SizedBox(height: 5),
+                  Text(article.teaser,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          fontSize: 11,
+                          height: 1.4)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Kartu lebar: foto besar di kiri (40%), teks di kanan.
+class _WideCard extends StatelessWidget {
+  final Article article;
+  final Color accent;
+  const _WideCard({required this.article, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: InkWell(
+        onTap: () => _openArticle(context, article),
+        child: SizedBox(
+          height: 132,
+          child: Row(
+            children: [
+              SizedBox(width: 140, child: _netImage(article.image)),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(article.kicker,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: accent,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.4)),
+                      const SizedBox(height: 4),
+                      Text(article.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w800,
+                              height: 1.25)),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Text('Baca selengkapnya',
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(width: 2),
+                          Icon(Icons.chevron_right, size: 16, color: accent),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        alignment: Alignment.center,
-        child: const Icon(Icons.image_outlined,
-            color: Color(0xFF334155), size: 40),
-      );
+      ),
+    );
+  }
 }
 
 class _ArticleDetail extends StatelessWidget {
@@ -410,7 +742,7 @@ class _ArticleDetail extends StatelessWidget {
               child: Image.network(
                 article.image,
                 fit: BoxFit.cover,
-                headers: _ArticleCard._headers,
+                headers: _imgHeaders,
                 loadingBuilder: (context, child, progress) => progress == null
                     ? child
                     : const Center(

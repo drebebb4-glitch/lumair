@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-28T07:30:00Z",
+  "updated": "2026-10-28T09:00:00Z",
   "articles": [
     {
       "kicker": "PARTIKULAT",
@@ -75,6 +75,58 @@
         "Dua penyumbang berikutnya menyusul di belakangnya: pembakaran terbuka — sampah yang dibakar terbuka di musim kemarau, ladang yang dibersihkan dengan cara dibakar setelah panen — serta aktivitas industri dan pembangkit listrik batubara di pinggiran kota.",
         "Yang membuat polusi semakin terasa adalah kondisi cuaca. Saat kemarau panjang bertemu dengan angin yang tenang, udara kotor terperangkap dekat permukaan tanah tanpa dorongan untuk pergi. Inilah mengapa AQI di banyak kota tidak memburuk sejam dua semalam, tetapi menumpuk bertahap — lalu bertahan buruk berhari-hari sampai hujan akhirnya datang.",
         "Kabar baiknya: semuanya ini terukur, dan yang terukur bisa ditindaklanjuti. Karena itu data udara harian — termasuk dari aplikasi ini — berguna bukan sekadar sebagai peringatan, tetapi sebagai dasar keputusan, baik untuk menyesuaikan jadwal, memilih rute, maupun menekan penggunaan kendaraan privat di hari-hari terburuk."
+      ]
+    },
+    {
+      "kicker": "INDOOR",
+      "title": "Rumah Lebih Aman? Bisa — Kalau Dikelola Benar",
+      "teaser": "Rata-rata kita menghabiskan delapan puluh hingga sembilan puluh persen waktu di dalam ruangan. Sayangnya, udara dalam ruangan tidak otomatis bersih.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Xiaomi_Smart_Air_Purifier_2S_fan.jpg/1280px-Xiaomi_Smart_Air_Purifier_2S_fan.jpg",
+      "credit": "Wikimedia Commons, CC BY 2.0",
+      "body": [
+        "Berlindung di dalam rumah saat AQI memburuk memang langkah yang tepat — tetapi bukan berarti udara di dalamnya otomatis bersih. Memasak tanpa ventilasi, asap rokok, debu dari karpet dan kasur, hingga uap minyak goreng yang terakumulasi setiap hari bisa membuat konsentrasi partikel di dalam ruangan bahkan mendekati udara di luar.",
+        "Hawa panas tertutup rapat memperburuk keadaan: tanpa pertukaran udara, apa pun yang mengapung di dalam ruangan tidak punya jalan keluar, lalu terakumulasi dari jam ke jam. Dinding yang di-cat baru, parfum ruangan, dan sejumlah alkohol pembersih juga melepaskan senyawa kimia (VOC) yang ikut mengganggu pernapasan.",
+        "Kabar baiknya: udara dalam ruangan punya tiga kunci pengelolaan yang bisa langsung dipraktikkan. Pertama, ventilasi silang setiap kali AQI di luar berada di zona hijau — buka pintu dan jendela yang berseberangan selama sepuluh menit. Kedua, nyalakan cooking hood atau minimal exhaust fan setiap kali memasak. Ketiga, bila tersedia, purifier udara seperti pada foto di atas dibuat berjalan terus di ruang utama — filter HEPA memang kecil, tetapi dampaknya nyata bagi kecepatan turunnya PM2.5 di dalam ruangan.",
+        "Satu catatan terakhir: jangan berharap banyak dari pengharum ruangan. Harum itu menutupi bau, bukan membersihkan udara — yang ditambahkannya justru senyawa baru yang perlu dihirup."
+      ]
+    },
+    {
+      "kicker": "DATA",
+      "title": "Sensor Murah Bisa Dipercaya? Seberapa Akurat Angkamu",
+      "teaser": "Sensor laser sekarang sekecil kancing dan datanya diproduksi setiap hari. Tetapi ketelitiannya tidak sama rata.",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Real-time_Particulate_Matter_Sensor_%288118c90f-2657-48ca-8191-fc77de7a47cf%29.jpg",
+      "credit": "Foto US EPA — Domain Publik",
+      "body": [
+        "Sensor partikel di foto di atas bekerja dengan prinsip sederhana: laser diarahkan ke aliran udara, dan setiap partikel yang lewat memantulkan cahaya yang tertangkap fotodioda. Dari frekuensi pantulan itulah angka PM2.5 dihitung — tanpa alat seberat koper sebagaimana praktik laboratorium klasik.",
+        "Kekuatan sensor murah justru pada jumlahnya. Ribuan stasiun komunitas di seluruh dunia mengirim data setiap hari, dan LUMAIR ikut memanfaatkan jaringan semacam itu. Untuk melihat kecenderungan — apakah polusi sedang naik atau turun — data kerumunan seperti ini hampir setara dengan stasiun referensi pemerintah: kesalahan kecil tiap sensor saling meniadakan saat dirata-rata.",
+        "Yang perlu diwaspadai adalah tuntutan presisi absolut pada satu pembacaan. Kelembapan tinggi membuat sensor optik sering membaca terlalu tinggi — butiran kabut yang melayang bisa terhitung sebagai partikel polusi. Selain itu, setiap model punya rentang kemampuan berbeda: tidak semuanya bisa memisahkan PM1.0, PM2.5, dan PM10 secara detail.",
+        "Ada juga usia alat: sensor murah biasanya dirancang untuk dua sampai tiga tahun pemakaian sebelum lasernya melemah dan angkanya mulai melenceng. Karena itu, saat membandingkan angka aplikasi dengan pengalaman di lapangan, gunakan tren jangka pendek dan rata-rata beberapa stasiun terdekat — bukan satu angka tunggal. Dengan cara itu, sensor sekaleng pun cukup andal untuk mengambil keputusan harian."
+      ]
+    },
+    {
+      "kicker": "ATMOSFIR",
+      "title": "Kenapa Polusi Bisa Kabur Ke Langit Tapi Balik Lagi",
+      "teaser": "Lapisan udara hangat di atas kota itu seperti penutup panci: polutan yang terjebak tinggal di bawahnya.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/df/Smog_Layer_Over_Upstate_New_York_%2C_Image_of_the_Day_DVIDS695291.jpg/1280px-Smog_Layer_Over_Upstate_New_York_%2C_Image_of_the_Day_DVIDS695291.jpg",
+      "credit": "Foto NASA/DVIDS — Domain Publik",
+      "body": [
+        "Dari foto di atas (rekaman udara dari satelit di atas New York), kabut keabuan menyelimuti kota — bukan karena berawan, melainkan karena lapisan polusi terjebak di bawah lapisan udara hangat yang disebut temperature inversion. Ketika udara hangat berada di atas udara dingin, udara tidak bisa berputar naik seperti biasanya; apa pun yang dibuang ke udara justru terkurung di bawahnya, seperti uap di dalam panci tertutup.",
+        "Inversi semacam ini terjadi hampir setiap malam dan dini hari: permukaan tanah mendingin, lalu menyejukkan lapisan udara tepat di atasnya, sementara udara di ketinggian tetap hangat. Polutan dari kendaraan dan industri yang dibuang sejak senja menumpuk di lapisan tipis dekat tanah. Itulah sebabnya AQI di banyak kota paling buruk pada dini hari dan pagi buta — justru ketika sebagian orang mulai beraktivitas di jalan.",
+        "Ketika matahari naik cukup tinggi dan memanaskan permukaan, lapisan dingin itu pecah, udara kembali berputar naik, dan polusi terbawa naik lalu tercuci keluar dari kota. Momen pembukaan lapisan ini sering membuat angka AQI turun cepat dalam satu-dua jam — perubahan yang bisa kamu lihat langsung di grafik Prakiraan.",
+        "Inversi juga menjelaskan kenapa ada musim polusi. Di musim kemarau, langit cerah mempercepat pendinginan malam sehingga inversi lebih kuat, ditambah curah hujan yang minim berarti tidak ada \"deterjen\" alami. Sebaliknya saat musim hujan, langit tertutup dan sering gerimis membuat inversi jarang terbentuk. Polusi tidak pernah benar-benar \"hilang ke langit\" — ia menunggu cuaca yang tepat untuk pergi."
+      ]
+    },
+    {
+      "kicker": "CUACA",
+      "title": "Hujan: Deterjen Alami Udara",
+      "teaser": "Butir hujan menangkap partikel yang melayang — bukan pakai filter, udara dibersihkan dari atas.",
+      "image": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f9/Heavy_Rain_In_Cebu.jpg/1280px-Heavy_Rain_In_Cebu.jpg",
+      "credit": "Wikimedia Commons — Domain Publik",
+      "body": [
+        "Hujan bekerja seperti filter raksasa yang dipasang di langit. Setiap butir hujan yang jatuh menabrak jutaan partikel yang melayang — debu, sulfat, jelaga — dan membawanya turun ke permukaan tanah bersama airnya. Para ahli menyebut proses ini wet scavenging, atau pembenihan basah: udara dibersihkan dari atas ke bawah, tanpa sumber listrik dan tanpa filter yang perlu diganti.",
+        "Efektivitasnya sangat tergantung jenis hujannya. Hujan deras dan lama adalah pembersih paling ampuh — AQI bisa turun puluhan angka dalam beberapa jam. Sebaliknya gerimis tipis di udara yang sangat kering justru minim pengaruh, karena butirnya terlalu sedikit untuk menangkap cukup banyak partikel. Itulah sebabnya dua kejadian hujan berbeda bisa menghasilkan perbaikan udara yang berbeda jauh.",
+        "Pernah memperhatikan udara setelah hujan deras malam? Paginya langit terlihat jauh lebih jernih, garis-garis gedung terbentak tajam, dan napas terasa lebih enteng — itu bukan ilusi, melainkan hasil kerja jutaan butir air yang mengantarkan partikel keluar dari udara yang kita hirup.",
+        "Tapi ada batasnya: hujan membersihkan partikel, bukan gas. Ozon dan gas nitrogen berpindah dengan cara lain, dan polusi yang tersapu ke tanah akan kembali melayang begitu jalan mengering dan mobil memecahkan debunya lagi. Karena itu setelah hujan berhenti, kualitas udara biasanya membaik satu-dua hari — lalu perlahan naik kembali. Cek grafik Prakiraan LUMAIR untuk melihat polanya berputar."
       ]
     }
   ]
