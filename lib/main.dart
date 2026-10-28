@@ -33,12 +33,7 @@ class LumairApp extends StatelessWidget {
   }
 }
 
-/// Durasi minimal splash tampil, supaya animasi pembuka sempat selesai
-/// (di web flag onboarding terbaca sangat cepat).
-const kSplashMinDuration = Duration(milliseconds: 1800);
-
-/// Gate peluncuran: splash animasi (durasi minimal) → onboarding (1x) →
-/// navigasi utama.
+/// Gate peluncuran: splash statis → onboarding (1x) → navigasi utama.
 class _RootGate extends StatefulWidget {
   const _RootGate();
   @override
@@ -47,22 +42,11 @@ class _RootGate extends StatefulWidget {
 
 class _RootGateState extends State<_RootGate> {
   bool? _onboarded;
-  bool _splashDone = false;
-  Timer? _splashTimer;
 
   @override
   void initState() {
     super.initState();
     _loadFlag();
-    _splashTimer = Timer(kSplashMinDuration, () {
-      if (mounted) setState(() => _splashDone = true);
-    });
-  }
-
-  @override
-  void dispose() {
-    _splashTimer?.cancel();
-    super.dispose();
   }
 
   Future<void> _loadFlag() async {
@@ -87,7 +71,7 @@ class _RootGateState extends State<_RootGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (_onboarded == null || !_splashDone) return const _SplashScreen();
+    if (_onboarded == null) return const _SplashScreen();
     if (_onboarded == false) {
       return OnboardingScreen(onDone: _finishOnboarding);
     }
