@@ -33,6 +33,8 @@ void main() {
     SharedPreferences.setMockInitialValues({'lumair_onboarded': true});
     await tester.pumpWidget(const ProviderScope(child: LumairApp()));
     await tester.pump();
+    // Lewati durasi minimal splash animasi.
+    await tester.pump(kSplashMinDuration + const Duration(milliseconds: 100));
 
     expect(find.text('LUMAIR'), findsOneWidget);
     // Bottom nav: 5 item, index awal 0. (Assert byIcon di-skip: codepoint
@@ -77,6 +79,8 @@ void main() {
     SharedPreferences.setMockInitialValues({}); // belum pernah onboarding
     await tester.pumpWidget(const ProviderScope(child: LumairApp()));
     await tester.pump();
+    // Lewati durasi minimal splash animasi.
+    await tester.pump(kSplashMinDuration + const Duration(milliseconds: 100));
     await tester.pump();
 
     expect(find.text('Lewati'), findsOneWidget);
