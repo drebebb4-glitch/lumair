@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/aqi_helper.dart';
+import '../../core/cities.dart';
+import '../../domain/models/air_quality.dart';
 import '../../domain/providers.dart';
 import '../widgets/aurora_background.dart';
 import '../widgets/glass.dart';
@@ -42,6 +44,7 @@ class HomeScreen extends ConsumerWidget {
       data: (r) {
         final color = AqiHelper.color(r.usAqi);
         final loc = ref.watch(locationProvider);
+        final ov = ref.watch(homeLocationProvider);
         final gpsFallback = loc.maybeWhen(data: (l) => l.isFallback, orElse: () => false);
         return Scaffold(
           backgroundColor: Colors.transparent,
@@ -69,7 +72,7 @@ class HomeScreen extends ConsumerWidget {
                         icon: Icons.location_city_outlined,
                         color: Color(0xFFFBBF24),
                         text:
-                            'Lokasi gak bisa diakses — contohnya pakai Jakarta. Lu bisa ganti kota di tab Favorit 😉',
+                            'Akses lokasi gak aktif — sementara pakai Jakarta. Tap nama kota di atas buat pilih kota manual.',
                       ),
                     if (r.fromCache) ...[
                       const SizedBox(height: 8),
@@ -149,28 +152,48 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       child: Column(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.location_on_outlined,
-                                  size: 16,
-                                  color: Colors.white.withValues(alpha: 0.8)),
-                              const SizedBox(width: 5),
-                              Flexible(
-                                child: Text(
-                                  r.placeName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.85),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
+                          // Bar lokasi — tap buat ganti/pilih lokasi
+                          InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => showLocationPickerSheet(context),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 4, horizontal: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.location_on_outlined,
+                                      size: 16,
+                                      color:
+                                          Colors.white.withValues(alpha: 0.8)),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      r.placeName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.85),
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 4),
+                                  const _AqiHelpButton(),
+                                  const SizedBox(width: 8),
+                                  _LocationModeChip(
+                                      isOverride: ov != null,
+                                      isFallback: gpsFallback),
+                                  const SizedBox(width: 2),
+                                  Icon(Icons.expand_more,
+                                      size: 16,
+                                      color:
+                                          Colors.white.withValues(alpha: 0.6)),
+                                ],
                               ),
-                              const SizedBox(width: 4),
-                              const _AqiHelpButton(),
-                            ],
+                            ),
                           ),
                           const SizedBox(height: 10),
                           AqiGauge(aqi: r.usAqi, color: color),
@@ -485,6 +508,289 @@ void showAqiHelpSheet(BuildContext context) {
       ),
     ),
   );
+}
+
+/// Label mode lokasi di beranda: GPS / Dipilih / Fallback.
+class _LocationModeChip extends StatelessWidget {
+  final bool isOverride;
+  final bool isFallback;
+  const _LocationModeChip({required this.isOverride, required this.isFallback});
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, label, c) = isOverride
+        ? (Icons.push_pin_outlined, 'Dipilih', const Color(0xFFFBBF24))
+        : isFallback
+            ? (Icons.location_city_outlined, 'Auto', const Color(0xFF94A3B8))
+            : (Icons.gps_fixed, 'GPS', const Color(0xFF34D399));
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: c.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: c),
+          const SizedBox(width: 3),
+          Text(label,
+              style: TextStyle(
+                  color: c, fontSize: 9.5, fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sheet "pilih lokasi beranda": GPS sekarang, pencarian kota, 20 kota populer.
+void showLocationPickerSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: const Color(0xFF0B1220),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) => const _LocationPickerSheet(),
+  );
+}
+
+class _LocationPickerSheet extends ConsumerStatefulWidget {
+  const _LocationPickerSheet();
+
+  @override
+  ConsumerState<_LocationPickerSheet> createState() =>
+      _LocationPickerSheetState();
+}
+
+class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
+  List<FavoritePlace> _results = const [];
+  bool _searching = false;
+
+  Future<void> _doSearch(String q) async {
+    setState(() => _searching = true);
+    try {
+      final results = await ref.read(geocodingApiProvider).search(q);
+      if (!mounted) return;
+      setState(() {
+        _results = results;
+        _searching = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _results = const [];
+        _searching = false;
+      });
+    }
+  }
+
+  void _pick(FavoritePlace p) {
+    ref.read(homeLocationProvider.notifier).set(
+          HomeOverride(name: p.name, lat: p.lat, lon: p.lon),
+        );
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final override = ref.watch(homeLocationProvider);
+    final gps = ref.watch(gpsLocationProvider);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Pilih Lokasi Beranda',
+                style: TextStyle(
+                    color: Color(0xFFE2E8F0),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18)),
+            const SizedBox(height: 6),
+            Text(
+              'Pilihan ini bakal dipakai terus di semua tab sampai lu balikin ke GPS.',
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55), fontSize: 12.5),
+            ),
+            const SizedBox(height: 14),
+
+            // ── Lokasi GPS sekarang ("aku sekarang di mana?") ──
+            Container(
+              decoration: BoxDecoration(
+                color: override == null
+                    ? const Color(0xFF34D399).withValues(alpha: 0.10)
+                    : Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: override == null
+                        ? const Color(0xFF34D399).withValues(alpha: 0.5)
+                        : Colors.white.withValues(alpha: 0.10)),
+              ),
+              child: ListTile(
+                leading: gps.maybeWhen(
+                  data: (l) => Icon(
+                    l.isFallback ? Icons.location_city_outlined : Icons.gps_fixed,
+                    color: override == null
+                        ? const Color(0xFF34D399)
+                        : const Color(0xFF94A3B8),
+                  ),
+                  orElse: () => const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+                title: Text(
+                  gps.maybeWhen(
+                    data: (l) => l.isFallback ? '${l.name} (auto)' : l.name,
+                    orElse: () => 'Nyari posisi GPS…',
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Color(0xFFE2E8F0),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14.5),
+                ),
+                subtitle: gps.maybeWhen(
+                  data: (l) => Text(
+                    l.isFallback
+                        ? 'Sinyal GPS gak aktif — posisi kira-kira ini'
+                        : '${l.lat.toStringAsFixed(4)}, ${l.lon.toStringAsFixed(4)}',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 11.5),
+                  ),
+                  orElse: () => const SizedBox.shrink(),
+                ),
+                trailing: override == null
+                    ? const Icon(Icons.check_circle,
+                        color: Color(0xFF34D399), size: 20)
+                    : TextButton(
+                        onPressed: () {
+                          ref.read(homeLocationProvider.notifier).clear();
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Pakai ini',
+                            style: TextStyle(
+                                color: Color(0xFF34D399),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                onTap: () {
+                  ref.read(homeLocationProvider.notifier).clear();
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // ── Search kota ──
+            TextField(
+              textInputAction: TextInputAction.search,
+              onSubmitted: _doSearch,
+              decoration: const InputDecoration(
+                hintText: 'Cari kota / daerah di seluruh dunia…',
+                prefixIcon: Icon(Icons.search, size: 20),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (_searching)
+              const Padding(
+                padding: EdgeInsets.all(8),
+                child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else if (_results.isNotEmpty) ...[
+              Text('HASIL PENCARIAN',
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2)),
+              const SizedBox(height: 6),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _results.length,
+                  itemBuilder: (ctx, i) {
+                    final p = _results[i];
+                    final selected = override != null &&
+                        override.lat == p.lat &&
+                        override.lon == p.lon;
+                    return ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.place_outlined,
+                          size: 20, color: Color(0xFF94A3B8)),
+                      title: Text(p.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13.5)),
+                      trailing: selected
+                          ? const Icon(Icons.check_circle,
+                              color: Color(0xFF34D399), size: 18)
+                          : null,
+                      onTap: () => _pick(p),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+
+            // ── 20 kota besar Indonesia ──
+            Text('KOTA BESAR INDONESIA',
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2)),
+            const SizedBox(height: 8),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final c in idCities)
+                      InkWell(
+                        borderRadius: BorderRadius.circular(999),
+                        onTap: () => _pick(FavoritePlace(
+                            id: 'city_${c.name}',
+                            name: c.name,
+                            lat: c.lat,
+                            lon: c.lon)),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.07),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.12)),
+                          ),
+                          child: Text(c.name,
+                              style: const TextStyle(
+                                  color: Color(0xFFE2E8F0),
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _StatusBanner extends StatelessWidget {
