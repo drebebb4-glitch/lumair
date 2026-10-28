@@ -36,6 +36,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body:
           'Semua angka dijelaskan: skala AQI 0–500, batas aman tiap polutan, dan status aktivitas (aman/waspada/hindari). Tarik ke bawah untuk refresh data.',
     ),
+    (
+      icon: Icons.explore_outlined,
+      colors: [Color(0xFFA78BFA), Color(0xFFF472B6)],
+      title: 'Tur fitur',
+      body: '5 tab di bawah — semua ada gunanya:',
+    ),
   ];
 
   void _next() {
@@ -46,6 +52,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       widget.onDone();
     }
   }
+
+  static const _fitur = [
+    (Icons.home, 'Beranda', 'udara lu sekarang'),
+    (Icons.show_chart, 'Prakiraan', 'udara bakal buruk atau enggak'),
+    (Icons.map, 'Peta', 'udara kota-kota lain'),
+    (Icons.favorite, 'Favorit', 'pantau kota penting buat lu'),
+    (Icons.school, 'Edukasi', 'cara ngelindungin diri'),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -72,25 +86,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onPageChanged: (i) => setState(() => _index = i),
                 itemBuilder: (context, i) {
                   final s = _slides[i];
+                  final isTour = i == _slides.length - 1;
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 28),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: s.colors,
+                        if (!isTour) ...[
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: s.colors,
+                              ),
+                              borderRadius: BorderRadius.circular(36),
                             ),
-                            borderRadius: BorderRadius.circular(36),
+                            child: Icon(s.icon, color: Colors.white, size: 56),
                           ),
-                          child: Icon(s.icon, color: Colors.white, size: 56),
-                        ),
-                        const SizedBox(height: 28),
+                        ] else ...[
+                          Container(
+                            width: 76,
+                            height: 76,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: s.colors,
+                              ),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Icon(s.icon, color: Colors.white, size: 36),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
                         Text(s.title,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
@@ -98,12 +129,57 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800)),
                         const SizedBox(height: 12),
-                        Text(s.body,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.65),
-                                fontSize: 14.5,
-                                height: 1.5)),
+                        if (!isTour)
+                          Text(s.body,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  fontSize: 14.5,
+                                  height: 1.5))
+                        else
+                          Text(s.body,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  fontSize: 13.5,
+                                  height: 1.4)),
+                        if (isTour) ...[
+                          const SizedBox(height: 14),
+                          for (final f in _fitur)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 32,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(f.$1,
+                                        color: const Color(0xFF34D399),
+                                        size: 17),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(f.$2,
+                                      style: const TextStyle(
+                                          color: Color(0xFFE2E8F0),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13.5)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(f.$3,
+                                        style: TextStyle(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.5),
+                                            fontSize: 12)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ],
                     ),
                   );

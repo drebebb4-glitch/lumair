@@ -66,7 +66,13 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     final notifier = ref.read(favoritesProvider.notifier);
     final cities = ref.watch(allCitiesProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Favorit')),
+      appBar: AppBar(
+        centerTitle: false,
+        title: const ScreenTitle(
+          title: 'Favorit',
+          purpose: 'Pantau kota yang penting buat lu',
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [

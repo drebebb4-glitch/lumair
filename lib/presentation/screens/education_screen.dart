@@ -60,7 +60,13 @@ class EducationScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final aqi = ref.watch(aqiProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Edukasi Udara')),
+      appBar: AppBar(
+        centerTitle: false,
+        title: const ScreenTitle(
+          title: 'Edukasi Udara',
+          purpose: 'Kenapa udara kotor bahaya & cara ngelindungin diri',
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

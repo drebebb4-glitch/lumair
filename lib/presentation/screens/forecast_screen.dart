@@ -17,7 +17,13 @@ class ForecastScreen extends ConsumerWidget {
     final forecast = ref.watch(forecastProvider);
     final daily = ref.watch(dailyForecastProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Prakiraan Udara')),
+      appBar: AppBar(
+        centerTitle: false,
+        title: const ScreenTitle(
+          title: 'Prakiraan Udara',
+          purpose: 'Jawabannya: udara bakal makin buruk atau enggak?',
+        ),
+      ),
       body: forecast.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Gagal memuat: $e')),

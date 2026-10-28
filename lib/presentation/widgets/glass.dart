@@ -44,9 +44,34 @@ class GlassCard extends StatelessWidget {
   }
 }
 
+/// Judul screen + 1 kalimat "guna fitur ini" — biar orang awam langsung
+/// paham tab buat apa, gak perlu nebak.
+class ScreenTitle extends StatelessWidget {
+  final String title;
+  final String purpose;
+  const ScreenTitle({super.key, required this.title, required this.purpose});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(title,
+            style: const TextStyle(
+                color: Color(0xFFE2E8F0),
+                fontWeight: FontWeight.w700,
+                fontSize: 17)),
+        Text(purpose,
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5)),
+      ],
+    );
+  }
+}
+
 /// Chip kecil bergaya kaca — dipakai buat tag lokasi, suhu, dll.
-class GlassChip extends StatelessWidget {
-  final IconData icon;
+class GlassChip extends StatelessWidget {  final IconData icon;
   final String label;
   final Color? color;
 

@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import '../../core/aqi_helper.dart';
 import '../../domain/models/air_quality.dart';
 import '../../domain/providers.dart';
+import '../widgets/glass.dart';
 import 'detail_screen.dart';
 
 class _BaseMap {
@@ -71,7 +72,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final base = _styles[_style];
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Peta Udara'),
+        centerTitle: false,
+        title: const ScreenTitle(
+          title: 'Peta Udara',
+          purpose: 'Kondisi udara kota-kota besar Indonesia',
+        ),
         actions: [
           IconButton(
             tooltip: 'Cari kota di peta',

@@ -31,7 +31,7 @@ class HomeScreen extends ConsumerWidget {
     final aqi = ref.watch(aqiProvider);
     return aqi.when(
       loading: () => const _StaticShell(
-        notice: 'Mengambil lokasi & data udara…',
+        notice: 'Sebentar ya — lagi ngambil data udara lu…',
         child: _Skeleton(),
       ),
       error: (e, _) => _StaticShell(
@@ -66,22 +66,78 @@ class HomeScreen extends ConsumerWidget {
                     // ── Banner status lokasi/internet ──
                     if (gpsFallback)
                       const _StatusBanner(
-                        icon: Icons.location_off_outlined,
+                        icon: Icons.location_city_outlined,
                         color: Color(0xFFFBBF24),
                         text:
-                            'GPS mati/ditolak — memakai Jakarta. Ganti kota di tab Favorit.',
+                            'Lokasi gak bisa diakses — contohnya pakai Jakarta. Lu bisa ganti kota di tab Favorit 😉',
                       ),
                     if (r.fromCache) ...[
                       const SizedBox(height: 8),
                       const _StatusBanner(
                         icon: Icons.cloud_off_outlined,
                         color: Color(0xFF38BDF8),
-                        text: 'Mode offline — menampilkan data terakhir tersimpan.',
+                        text: 'Lagi offline — ini data terakhir yang kesimpen.',
                       ),
                     ],
                     const SizedBox(height: 14),
 
-                    // ── Hero: gauge + skala + kondisi ──
+                    // ── VERDICT dulu: jawaban buat manusia, bukan angka ──
+                    GlassCard(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          color.withValues(alpha: 0.22),
+                          color.withValues(alpha: 0.08),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.20),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: color.withValues(alpha: 0.5)),
+                            ),
+                            child: Icon(Icons.spa_outlined,
+                                color: color, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${AqiHelper.category(r.usAqi)} • ${r.placeName}',
+                                  style: TextStyle(
+                                    color: color,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  AqiHelper.headline(r.usAqi),
+                                  style: const TextStyle(
+                                    color: Color(0xFFE2E8F0),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ── Angka: gauge + skala (pendukung jawaban) ──
                     GlassCard(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -112,6 +168,8 @@ class HomeScreen extends ConsumerWidget {
                                   ),
                                 ),
                               ),
+                              const SizedBox(width: 4),
+                              const _AqiHelpButton(),
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -198,7 +256,7 @@ class HomeScreen extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _sectionLabel('REKOMENDASI'),
+                                _sectionLabel('APA YANG HARUS LU LAKUKAN'),
                                 const SizedBox(height: 4),
                                 Text(
                                   AqiHelper.advice(r.usAqi),
@@ -268,7 +326,7 @@ class HomeScreen extends ConsumerWidget {
                         MaterialPageRoute(builder: (_) => DetailScreen(reading: r)),
                       ),
                       icon: const Icon(Icons.analytics_outlined),
-                      label: const Text('Lihat Detail 6 Polutan'),
+                      label: const Text('Cek apa aja isinya di udara lu'),
                     ),
                   ],
                 ),
@@ -324,6 +382,110 @@ Widget _sectionLabel(String s) => Text(s,
       fontWeight: FontWeight.w700,
       letterSpacing: 1.4,
     ));
+
+/// Tombol "?" → sheet "Apa itu AQI?" dalam bahasa awam.
+class _AqiHelpButton extends StatelessWidget {
+  const _AqiHelpButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: () => showAqiHelpSheet(context),
+      child: Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+        ),
+        child: const Center(
+          child: Text('?',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800)),
+        ),
+      ),
+    );
+  }
+}
+
+/// Sheet penjelasan AQI — bahasa sehari-hari, gak ada jargon.
+void showAqiHelpSheet(BuildContext context) {
+  const rows = [
+    (25, 'Aman buat semua orang'),
+    (75, 'Masih oke, sensitif mulai waspada'),
+    (125, 'Anak, lansia & asma mulai kena'),
+    (175, 'Semua orang mulai kerasa efek'),
+    (250, 'Serius — batasi aktivitas keluar'),
+    (400, 'Darurat — tetap di dalam ruangan'),
+  ];
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: const Color(0xFF0B1220),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (ctx) => Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 26),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Apa itu AQI?',
+              style: TextStyle(
+                  color: Color(0xFFE2E8F0),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18)),
+          const SizedBox(height: 8),
+          Text(
+            'AQI = angka 0–500 yang nunjukin seberapa kotor udara yang lu hirup. '
+            'Makin TINGGI angkanya = makin KOTOR udaranya.',
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 13.5,
+                height: 1.45),
+          ),
+          const SizedBox(height: 14),
+          const AqiScaleStrip(aqi: 0), // strip referensi (marker di 0)
+          const SizedBox(height: 14),
+          for (final r in rows)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AqiHelper.color(r.$1).withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: AqiHelper.color(r.$1).withValues(alpha: 0.5)),
+                    ),
+                    child: Text('${r.$1}',
+                        style: TextStyle(
+                            color: AqiHelper.color(r.$1),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(r.$2,
+                        style: const TextStyle(
+                            color: Color(0xFFE2E8F0), fontSize: 13)),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+}
 
 class _StatusBanner extends StatelessWidget {
   final IconData icon;

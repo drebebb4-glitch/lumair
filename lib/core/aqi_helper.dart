@@ -12,6 +12,17 @@ class AqiHelper {
     return 'Berbahaya';
   }
 
+  /// Kalimat "bahasa manusia" — jawaban pertama buat orang awam,
+  /// bukan jargon. Dipakai sebagai verdict besar di Beranda.
+  static String headline(int aqi) {
+    if (aqi <= 50) return 'Udara bersih hari ini — enjoy keluar rumah!';
+    if (aqi <= 100) return 'Udara lumayan — kebanyakan orang tetap aman.';
+    if (aqi <= 150) return 'Udara kurang bersih — kelompok sensitif hati-hati.';
+    if (aqi <= 200) return 'Udara tidak sehat — pakai masker kalau keluar.';
+    if (aqi <= 300) return 'Udara buruk — sebaiknya tinggal di dalam ruangan.';
+    return 'Udara sangat berbahaya — hindari keluar rumah.';
+  }
+
   static Color color(int aqi) {
     if (aqi <= 50) return const Color(0xFF22C55E);
     if (aqi <= 100) return const Color(0xFFEAB308);
