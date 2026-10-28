@@ -130,9 +130,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        title: const ScreenTitle(
-          title: 'Peta Udara',
-          purpose: 'Geser, zoom, atau long-press titik mana pun',
+        title: Row(
+          children: [
+            Image.asset('assets/logo.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+                semanticLabel: 'Logo LUMAIR',
+                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: ScreenTitle(
+                title: 'Peta Udara',
+                purpose: 'Geser, zoom, atau long-press titik mana pun',
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(

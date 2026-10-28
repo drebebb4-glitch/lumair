@@ -68,9 +68,22 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        title: const ScreenTitle(
-          title: 'Favorit',
-          purpose: 'Pantau kota yang penting buat lu',
+        title: Row(
+          children: [
+            Image.asset('assets/logo.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+                semanticLabel: 'Logo LUMAIR',
+                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: ScreenTitle(
+                title: 'Favorit',
+                purpose: 'Pantau kota yang penting buat lu',
+              ),
+            ),
+          ],
         ),
       ),
       body: ListView(

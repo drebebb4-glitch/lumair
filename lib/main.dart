@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +11,7 @@ import 'presentation/screens/forecast_screen.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/map_screen.dart';
 import 'presentation/screens/onboarding_screen.dart';
+import 'presentation/widgets/slide_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,17 +91,24 @@ class _SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 84,
-              height: 84,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
-                borderRadius: BorderRadius.circular(26),
+            Image.asset(
+              'assets/logo.png',
+              width: 96,
+              height: 96,
+              fit: BoxFit.contain,
+              semanticLabel: 'Logo LUMAIR',
+              errorBuilder: (_, __, ___) => Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
+                  borderRadius: BorderRadius.circular(26),
+                ),
+                child: const Icon(Icons.air, color: Colors.white, size: 44),
               ),
-              child: const Icon(Icons.air, color: Colors.white, size: 44),
             ),
             const SizedBox(height: 26),
             const SizedBox(
@@ -123,6 +133,10 @@ class _RootNav extends StatefulWidget {
 class _RootNavState extends State<_RootNav> {
   int _index = 0;
 
+  /// Tab yang masih bergeser keluar layar. Setelah animasi selesai, dikosongkan.
+  final Set<int> _moving = {};
+  Timer? _settle;
+
   static const _screens = [
     HomeScreen(),
     ForecastScreen(),
@@ -131,10 +145,43 @@ class _RootNavState extends State<_RootNav> {
     EducationScreen(),
   ];
 
+  void _select(int i) {
+    if (i == _index) return;
+    _settle?.cancel();
+    setState(() {
+      _moving.add(_index);
+      _index = i;
+    });
+    _settle = Timer(kSlideDuration, () {
+      if (mounted) setState(_moving.clear);
+    });
+  }
+
+  @override
+  void dispose() {
+    _settle?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Hormati pengaturan aksesibilitas "kurangi animasi".
+    final dur =
+        MediaQuery.of(context).disableAnimations ? Duration.zero : kSlideDuration;
+
     return Scaffold(
-      body: IndexedStack(index: _index, children: _screens),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          for (var i = 0; i < _screens.length; i++)
+            SlidePage(
+              offset: (i - _index).clamp(-1, 1).toDouble(),
+              visible: i == _index || _moving.contains(i),
+              duration: dur,
+              child: _screens[i],
+            ),
+        ],
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF0B1220),
@@ -153,10 +200,9 @@ class _RootNavState extends State<_RootNav> {
             unselectedItemColor: const Color(0xFF64748B),
             selectedFontSize: 11.5,
             unselectedFontSize: 11.5,
-            // Standar app modern: SEMUA label tampil — gak nebak-nebak.
             showSelectedLabels: true,
             showUnselectedLabels: true,
-            onTap: (i) => setState(() => _index = i),
+            onTap: _select,
             items: const [
               BottomNavigationBarItem(
                   icon: Icon(Icons.home_outlined),

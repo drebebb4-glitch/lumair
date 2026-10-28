@@ -22,9 +22,22 @@ class ForecastScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        title: const ScreenTitle(
-          title: 'Prakiraan Udara',
-          purpose: 'Jawabannya: udara bakal makin buruk atau enggak?',
+        title: Row(
+          children: [
+            Image.asset('assets/logo.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+                semanticLabel: 'Logo LUMAIR',
+                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: ScreenTitle(
+                title: 'Prakiraan Udara',
+                purpose: 'Jawabannya: udara bakal makin buruk atau enggak?',
+              ),
+            ),
+          ],
         ),
       ),
       body: forecast.when(

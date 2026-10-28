@@ -91,9 +91,22 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        title: const ScreenTitle(
-          title: 'Edukasi Udara',
-          purpose: 'Kenapa udara kotor bahaya & cara ngelindungin diri',
+        title: Row(
+          children: [
+            Image.asset('assets/logo.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.contain,
+                semanticLabel: 'Logo LUMAIR',
+                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: ScreenTitle(
+                title: 'Edukasi Udara',
+                purpose: 'Kenapa udara kotor bahaya & cara ngelindungin diri',
+              ),
+            ),
+          ],
         ),
       ),
       body: RefreshIndicator(

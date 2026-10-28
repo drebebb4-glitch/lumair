@@ -367,17 +367,24 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.only(top: 8),
           child: Row(
             children: [
-              Container(
+              Image.asset(
+                'assets/logo.png',
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
-                  borderRadius: BorderRadius.circular(14),
+                fit: BoxFit.contain,
+                semanticLabel: 'Logo LUMAIR',
+                errorBuilder: (_, __, ___) => Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.air, color: Colors.white),
                 ),
-                child: const Icon(Icons.air, color: Colors.white),
               ),
               const SizedBox(width: 12),
               Text(

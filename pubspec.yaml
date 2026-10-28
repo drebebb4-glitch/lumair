@@ -33,6 +33,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/dummy/
+    - assets/logo.png
   fonts:
     - family: Plus Jakarta Sans
       fonts:
