@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/app_theme.dart';
+import 'core/constants.dart';
 import 'presentation/screens/education_screen.dart';
 import 'presentation/screens/favorites_screen.dart';
 import 'presentation/screens/forecast_screen.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/map_screen.dart';
+import 'presentation/screens/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,8 +23,93 @@ class LumairApp extends StatelessWidget {
     return MaterialApp(
       title: 'LUMAIR',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      home: const _RootNav(),
+      theme: AppTheme.dark,
+      home: const _RootGate(),
+    );
+  }
+}
+
+/// Gate peluncuran: splash statis → onboarding (1x) → navigasi utama.
+class _RootGate extends StatefulWidget {
+  const _RootGate();
+  @override
+  State<_RootGate> createState() => _RootGateState();
+}
+
+class _RootGateState extends State<_RootGate> {
+  bool? _onboarded;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFlag();
+  }
+
+  Future<void> _loadFlag() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() => _onboarded = p.getBool(AppConstants.onboardedKey) ?? false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _onboarded = true); // gagal baca → skip onboarding
+    }
+  }
+
+  Future<void> _finishOnboarding() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setBool(AppConstants.onboardedKey, true);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _onboarded = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_onboarded == null) return const _SplashScreen();
+    if (_onboarded == false) {
+      return OnboardingScreen(onDone: _finishOnboarding);
+    }
+    return const _RootNav();
+  }
+}
+
+/// Splash statis (tanpa timer/animasi — aman test). Teks brand tidak
+/// ditulis di sini supaya asersi test 'LUMAIR' tetap tepat 1x di Beranda.
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF070B14),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
+                borderRadius: BorderRadius.circular(26),
+              ),
+              child: const Icon(Icons.air, color: Colors.white, size: 44),
+            ),
+            const SizedBox(height: 26),
+            const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2.4, color: Color(0xFF34D399)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -63,10 +151,11 @@ class _RootNavState extends State<_RootNav> {
             currentIndex: _index,
             selectedItemColor: const Color(0xFF34D399),
             unselectedItemColor: const Color(0xFF64748B),
-            selectedFontSize: 11,
-            unselectedFontSize: 11,
+            selectedFontSize: 11.5,
+            unselectedFontSize: 11.5,
+            // Standar app modern: SEMUA label tampil — gak nebak-nebak.
             showSelectedLabels: true,
-            showUnselectedLabels: false, // hemat lebar di HP sempit (360px)
+            showUnselectedLabels: true,
             onTap: (i) => setState(() => _index = i),
             items: const [
               BottomNavigationBarItem(

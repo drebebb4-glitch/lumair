@@ -37,6 +37,16 @@ final forecastProvider = FutureProvider<List<ForecastPoint>>((ref) async {
   }
 });
 
+/// Ringkasan 4 hari. Gagal -> list kosong.
+final dailyForecastProvider = FutureProvider<List<DayForecast>>((ref) async {
+  final loc = await ref.watch(locationProvider.future);
+  try {
+    return await OpenMeteoApi().getDaily4(lat: loc.lat, lon: loc.lon);
+  } catch (_) {
+    return <DayForecast>[];
+  }
+});
+
 /// AQI satu tempat favorit (on-demand).
 final placeAqiProvider =
     FutureProvider.family<AirQualityReading, FavoritePlace>((ref, place) async {

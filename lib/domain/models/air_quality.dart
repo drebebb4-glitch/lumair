@@ -83,6 +83,20 @@ class ForecastPoint {
   const ForecastPoint({required this.time, required this.aqi, required this.pm25});
 }
 
+/// Ringkasan 1 hari (dari hourly) — buat list prakiraan 4 hari.
+class DayForecast {
+  final DateTime day;
+  final int maxAqi; // AQI terburuk hari itu
+  final double avgPm25;
+  final int peakHour; // jam AQI terburuk
+  const DayForecast({
+    required this.day,
+    required this.maxAqi,
+    required this.avgPm25,
+    required this.peakHour,
+  });
+}
+
 class FavoritePlace {
   final String id;
   final String name;

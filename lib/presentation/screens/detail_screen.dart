@@ -261,6 +261,40 @@ class DetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
+                    // Batas aman ditulis eksplisit + status rasio.
+                    Row(
+                      children: [
+                        Text('Batas aman',
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.45),
+                                fontSize: 11.5)),
+                        const Spacer(),
+                        Text('${p.warnAt.toStringAsFixed(0)} ${p.unit}',
+                            style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.65),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600)),
+                        if (over) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444)
+                                  .withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                                '${(p.value / p.warnAt).toStringAsFixed(1)}× batas',
+                                style: const TextStyle(
+                                    color: Color(0xFFF87171),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     Text(p.desc,
                         style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.55),

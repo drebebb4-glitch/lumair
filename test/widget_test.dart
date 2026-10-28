@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:network_image_mock/network_image_mock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lumair/core/aqi_helper.dart';
 import 'package:lumair/core/cities.dart';
 import 'package:lumair/domain/models/air_quality.dart';
 import 'package:lumair/domain/providers.dart';
@@ -28,7 +29,8 @@ AirQualityReading _dummy() => AirQualityReading(
 
 void main() {
   testWidgets('LUMAIR app boots with bottom nav', (WidgetTester tester) async {
-    SharedPreferences.setMockInitialValues({});
+    // Sudah pernah onboarding → langsung ke navigasi utama.
+    SharedPreferences.setMockInitialValues({'lumair_onboarded': true});
     await tester.pumpWidget(const ProviderScope(child: LumairApp()));
     await tester.pump();
 
@@ -67,6 +69,34 @@ void main() {
       expect(find.text('AQI 128'), findsWidgets);
       expect(find.text('Jakarta'), findsOneWidget);
     });
+  });
+
+  testWidgets('Onboarding tampil di peluncuran pertama & bisa dilewati',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({}); // belum pernah onboarding
+    await tester.pumpWidget(const ProviderScope(child: LumairApp()));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Lewati'), findsOneWidget);
+    expect(find.text('Kenal udara lu'), findsOneWidget);
+    await tester.tap(find.text('Lewati'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Beranda'), findsOneWidget); // masuk navigasi utama
+  });
+
+  test('Skala AQI & kategori konsisten', () {
+    expect(AqiHelper.category(0), 'Baik');
+    expect(AqiHelper.category(75), 'Sedang');
+    expect(AqiHelper.category(128), 'Sensitif');
+    expect(AqiHelper.category(180), 'Tidak Sehat');
+    expect(AqiHelper.category(250), 'Sangat Tidak Sehat');
+    expect(AqiHelper.category(400), 'Berbahaya');
+    // Batas segmen strip skala 0-500.
+    for (final a in [0, 50, 100, 150, 200, 300, 500]) {
+      expect(AqiHelper.color(a), isA<Color>());
+    }
   });
 
   test('Daftar semua daerah berisi 20 kota Indonesia', () {

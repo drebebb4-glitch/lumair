@@ -5,9 +5,15 @@ import '../../domain/providers.dart';
 import '../widgets/aurora_background.dart';
 import '../widgets/glass.dart';
 import '../widgets/aqi_gauge.dart';
+import '../widgets/scale_strip.dart';
+import '../widgets/activity_card.dart';
 import 'detail_screen.dart';
+import 'forecast_screen.dart';
+import 'favorites_screen.dart';
+import 'map_screen.dart';
 
-/// Beranda "LUMAIR Pro": aurora dinamis + gauge animated + kartu kaca.
+/// Beranda LUMAIR 2.0 — pola app modern: hero AQI + skala + aktivitas
+/// + banner status + quick actions ke semua fitur.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -24,7 +30,10 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final aqi = ref.watch(aqiProvider);
     return aqi.when(
-      loading: () => const _StaticShell(child: _Skeleton()),
+      loading: () => const _StaticShell(
+        notice: 'Mengambil lokasi & data udara…',
+        child: _Skeleton(),
+      ),
       error: (e, _) => _StaticShell(
         child: _ErrorCard(message: '$e', onRetry: () {
           ref.invalidate(locationProvider);
@@ -32,6 +41,8 @@ class HomeScreen extends ConsumerWidget {
       ),
       data: (r) {
         final color = AqiHelper.color(r.usAqi);
+        final loc = ref.watch(locationProvider);
+        final gpsFallback = loc.maybeWhen(data: (l) => l.isFallback, orElse: () => false);
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: Stack(
@@ -49,48 +60,28 @@ class HomeScreen extends ConsumerWidget {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                   children: [
-                    // ── Header ──
-                    SafeArea(
-                      bottom: false,
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [Color(0xFF34D399), Color(0xFF0EA5E9)],
-                                ),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(Icons.air, color: Colors.white),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'LUMAIR',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 2.5,
-                                color: Colors.white.withValues(alpha: 0.95),
-                              ),
-                            ),
-                            const Spacer(),
-                            if (r.fromCache)
-                              const GlassChip(
-                                  icon: Icons.cloud_off_outlined,
-                                  label: 'offline'),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+                    _header(r.fromCache),
+                    const SizedBox(height: 14),
 
-                    // ── Gauge utama ──
+                    // ── Banner status lokasi/internet ──
+                    if (gpsFallback)
+                      const _StatusBanner(
+                        icon: Icons.location_off_outlined,
+                        color: Color(0xFFFBBF24),
+                        text:
+                            'GPS mati/ditolak — memakai Jakarta. Ganti kota di tab Favorit.',
+                      ),
+                    if (r.fromCache) ...[
+                      const SizedBox(height: 8),
+                      const _StatusBanner(
+                        icon: Icons.cloud_off_outlined,
+                        color: Color(0xFF38BDF8),
+                        text: 'Mode offline — menampilkan data terakhir tersimpan.',
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+
+                    // ── Hero: gauge + skala + kondisi ──
                     GlassCard(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -123,28 +114,10 @@ class HomeScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 10),
                           AqiGauge(aqi: r.usAqi, color: color),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                  color: color.withValues(alpha: 0.5)),
-                            ),
-                            child: Text(
-                              AqiHelper.category(r.usAqi),
-                              style: TextStyle(
-                                color: color,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ),
+                          const SizedBox(height: 4),
+                          AqiScaleStrip(aqi: r.usAqi),
                           const SizedBox(height: 16),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -159,8 +132,7 @@ class HomeScreen extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 GlassChip(
                                   icon: Icons.thermostat_outlined,
-                                  label:
-                                      '${r.temp!.toStringAsFixed(0)}°C',
+                                  label: '${r.temp!.toStringAsFixed(0)}°C',
                                 ),
                                 const SizedBox(width: 8),
                                 GlassChip(
@@ -173,13 +145,25 @@ class HomeScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Update ${r.time.hour.toString().padLeft(2, '0')}:${r.time.minute.toString().padLeft(2, '0')}',
+                            'Update ${r.time.hour.toString().padLeft(2, '0')}:${r.time.minute.toString().padLeft(2, '0')} • tarik ke bawah untuk refresh',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.45),
-                              fontSize: 11,
-                              letterSpacing: 0.5,
+                              fontSize: 10.5,
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ── Aktivitas: outdoor / olahraga / anak ──
+                    GlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sectionLabel('AKTIVITAS DI KONDISI INI'),
+                          const SizedBox(height: 10),
+                          ActivityCard(aqi: r.usAqi),
                         ],
                       ),
                     ),
@@ -214,14 +198,8 @@ class HomeScreen extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Rekomendasi',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.6),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 1.2,
-                                    )),
-                                const SizedBox(height: 3),
+                                _sectionLabel('REKOMENDASI'),
+                                const SizedBox(height: 4),
                                 Text(
                                   AqiHelper.advice(r.usAqi),
                                   style: const TextStyle(
@@ -238,7 +216,52 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 18),
 
-                    // ── CTA ke detail ──
+                    // ── Quick actions ──
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickAction(
+                            icon: Icons.map_outlined,
+                            label: 'Peta',
+                            sub: 'Zona AQI kota',
+                            color: const Color(0xFF38BDF8),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const MapScreen()),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _QuickAction(
+                            icon: Icons.show_chart_outlined,
+                            label: 'Prakiraan',
+                            sub: '24 jam & 4 hari',
+                            color: const Color(0xFFA78BFA),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const ForecastScreen()),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _QuickAction(
+                            icon: Icons.favorite_border,
+                            label: 'Favorit',
+                            sub: 'Kota tersimpan',
+                            color: const Color(0xFFF472B6),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const FavoritesScreen()),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     FilledButton.icon(
                       onPressed: () => Navigator.push(
                         context,
@@ -256,17 +279,152 @@ class HomeScreen extends ConsumerWidget {
       },
     );
   }
+
+  Widget _header(bool fromCache) => SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.air, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'LUMAIR',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.5,
+                  color: Colors.white.withValues(alpha: 0.95),
+                ),
+              ),
+              const Spacer(),
+              if (fromCache)
+                const GlassChip(icon: Icons.cloud_off_outlined, label: 'offline'),
+            ],
+          ),
+        ),
+      );
 }
 
-/// Kerangka statis (loading/error) — TANPA animasi supaya widget test aman.
+Widget _sectionLabel(String s) => Text(s,
+    style: TextStyle(
+      color: Colors.white.withValues(alpha: 0.5),
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.4,
+    ));
+
+class _StatusBanner extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String text;
+  const _StatusBanner({required this.icon, required this.color, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 17, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(text,
+                style: const TextStyle(
+                    color: Color(0xFFE2E8F0), fontSize: 12.5, height: 1.3)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String sub;
+  final Color color;
+  final VoidCallback onTap;
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.sub,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(height: 8),
+              Text(label,
+                  style: const TextStyle(
+                      color: Color(0xFFE2E8F0),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13)),
+              const SizedBox(height: 2),
+              Text(sub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.45),
+                      fontSize: 10)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Kerangka statis (loading/error) — tanpa timer/animasi → test aman.
 class _StaticShell extends StatelessWidget {
   final Widget child;
-  const _StaticShell({required this.child});
+  final String? notice;
+  const _StaticShell({required this.child, this.notice});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppNight.bg,
+      backgroundColor: const Color(0xFF070B14),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -297,7 +455,15 @@ class _StaticShell extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
+              if (notice != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(notice!,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12.5)),
+                ),
               Expanded(child: child),
             ],
           ),
@@ -307,11 +473,7 @@ class _StaticShell extends StatelessWidget {
   }
 }
 
-abstract final class AppNight {
-  static const bg = Color(0xFF070B14);
-}
-
-/// Skeleton loading statis (kaca abu-abu, tanpa timer).
+/// Skeleton loading statis (scrollable → gak pernah overflow).
 class _Skeleton extends StatelessWidget {
   const _Skeleton();
 
@@ -334,8 +496,8 @@ class _Skeleton extends StatelessWidget {
             children: [
               const SizedBox(height: 10),
               Container(
-                width: 160,
-                height: 160,
+                width: 150,
+                height: 150,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withValues(alpha: 0.05),
@@ -343,7 +505,7 @@ class _Skeleton extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.10), width: 16),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
               bar(26, w: 120),
               const SizedBox(height: 10),
             ],

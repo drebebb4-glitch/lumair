@@ -75,4 +75,51 @@ class OpenMeteoApi {
     }
     return out;
   }
+
+  /// Ringkasan 4 hari ke depan dari hourly (janji PRD: grafik + list 4 hari).
+  Future<List<DayForecast>> getDaily4({
+    required double lat,
+    required double lon,
+  }) async {
+    final uri = Uri.parse(
+      '${AppConstants.openMeteoBase}?latitude=$lat&longitude=$lon'
+      '&hourly=us_aqi,pm2_5&timezone=auto&forecast_days=5',
+    );
+    final res = await _client.get(uri).timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) throw Exception('Open-Meteo HTTP ${res.statusCode}');
+    final json = jsonDecode(res.body) as Map<String, dynamic>;
+    final hourly = json['hourly'] as Map<String, dynamic>;
+    final times = (hourly['time'] as List).cast<String>();
+    final aqis = (hourly['us_aqi'] as List).map((e) => (e as num?)?.toInt() ?? 0).toList();
+    final pms = (hourly['pm2_5'] as List).map((e) => (e as num?)?.toDouble() ?? 0).toList();
+    final now = DateTime.now();
+
+    // Kelompokkan per tanggal, hanya jam yang masih akan datang.
+    final buckets = <String, List<ForecastPoint>>{};
+    for (var i = 0; i < times.length; i++) {
+      final t = DateTime.tryParse(times[i]) ?? now;
+      if (!t.isAfter(now.subtract(const Duration(hours: 1)))) continue;
+      final key =
+          '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
+      buckets.putIfAbsent(key, () => []).add(
+            ForecastPoint(time: t, aqi: aqis[i], pm25: pms[i]),
+          );
+    }
+    final out = <DayForecast>[];
+    for (final pts in buckets.values.take(4)) {
+      var worst = pts.first;
+      var sum = 0.0;
+      for (final p in pts) {
+        if (p.aqi > worst.aqi) worst = p;
+        sum += p.pm25;
+      }
+      out.add(DayForecast(
+        day: pts.first.time,
+        maxAqi: worst.aqi,
+        avgPm25: sum / pts.length,
+        peakHour: worst.time.hour,
+      ));
+    }
+    return out;
+  }
 }

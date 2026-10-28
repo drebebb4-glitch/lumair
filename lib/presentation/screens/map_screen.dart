@@ -74,6 +74,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         title: const Text('Peta Udara'),
         actions: [
           IconButton(
+            tooltip: 'Cari kota di peta',
+            icon: const Icon(Icons.search),
+            onPressed: () => _openSearch(context),
+          ),
+          IconButton(
             tooltip: 'Ganti basemap: ${base.name}',
             icon: const Icon(Icons.layers_outlined),
             onPressed: () => setState(() => _style = (_style + 1) % _styles.length),
@@ -315,6 +320,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _openFav(BuildContext context, FavoritePlace place) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: const Color(0xFF0B1220),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) => Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -322,16 +331,20 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(place.name,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                style: const TextStyle(
+                    color: Color(0xFFE2E8F0),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16)),
             const SizedBox(height: 8),
             Consumer(
               builder: (context, ref2, __) {
                 final live = ref2.watch(placeAqiProvider(place));
                 return live.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Text('Gagal: $e'),
+                  loading: () => const Center(
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF34D399))),
+                  error: (e, _) => Text('Gagal: $e',
+                      style: const TextStyle(color: Color(0xFF94A3B8))),
                   data: (r) => ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
@@ -343,8 +356,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               fontWeight: FontWeight.bold)),
                     ),
                     title: Text(
-                        'AQI ${r.usAqi} — ${AqiHelper.category(r.usAqi)}'),
-                    subtitle: Text(AqiHelper.advice(r.usAqi)),
+                        'AQI ${r.usAqi} — ${AqiHelper.category(r.usAqi)}',
+                        style: const TextStyle(
+                            color: Color(0xFFE2E8F0),
+                            fontWeight: FontWeight.w600)),
+                    subtitle: Text(AqiHelper.advice(r.usAqi),
+                        style: const TextStyle(color: Color(0xFF94A3B8))),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -358,6 +375,128 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Sheet pencarian kota → hasil langsung bisa dibuka detail AQI-nya.
+  void _openSearch(BuildContext context) {
+    final ctrl = TextEditingController();
+    List<FavoritePlace> results = [];
+    String? error;
+    bool searching = false;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0B1220),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx, setSheet) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: 20 + MediaQuery.of(sheetCtx).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.search, color: Color(0xFF94A3B8)),
+                  SizedBox(width: 8),
+                  Text('Cari kota',
+                      style: TextStyle(
+                          color: Color(0xFFE2E8F0),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) async {
+                  final q = ctrl.text.trim();
+                  if (q.isEmpty) return;
+                  setSheet(() => searching = true);
+                  try {
+                    final res =
+                        await ref.read(geocodingApiProvider).search(q);
+                    setSheet(() {
+                      results = res;
+                      searching = false;
+                      error = res.isEmpty
+                          ? 'Tidak ketemu. Coba nama kota lain.'
+                          : null;
+                    });
+                  } catch (e) {
+                    setSheet(() {
+                      searching = false;
+                      error = 'Pencarian gagal (offline?)';
+                    });
+                  }
+                },
+                decoration: const InputDecoration(
+                  hintText: 'mis. Bandung, Medan…',
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+              ),
+              if (searching)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF34D399))),
+                ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(error!,
+                      style: const TextStyle(
+                          color: Color(0xFFF87171), fontSize: 12.5)),
+                ),
+              ...results.map((p) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.location_city_outlined,
+                        color: Color(0xFF94A3B8)),
+                    title: Text(p.name,
+                        style: const TextStyle(color: Color(0xFFE2E8F0))),
+                    subtitle: Text(
+                        '${p.lat.toStringAsFixed(2)}, ${p.lon.toStringAsFixed(2)}',
+                        style: const TextStyle(color: Color(0xFF64748B))),
+                    trailing: const Icon(Icons.chevron_right,
+                        color: Color(0xFF64748B)),
+                    onTap: () async {
+                      Navigator.pop(sheetCtx);
+                      try {
+                        final r = await ref
+                            .read(placeAqiProvider(p).future);
+                        if (!context.mounted) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => DetailScreen(reading: r)),
+                        );
+                      } catch (_) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'Gagal memuat AQI kota (offline?)')),
+                        );
+                      }
+                    },
+                  )),
+            ],
+          ),
         ),
       ),
     );

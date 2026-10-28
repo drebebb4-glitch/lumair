@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/aqi_helper.dart';
+import '../../domain/providers.dart';
+import '../widgets/glass.dart';
+import '../widgets/activity_card.dart';
 
 class _Article {
   final String title;
@@ -47,34 +52,94 @@ const _articles = [
   ),
 ];
 
-/// Edukasi statis (PRD P0).
-class EducationScreen extends StatelessWidget {
+/// Edukasi statis (PRD P0) + kartu live yang nyambung ke AQI user.
+class EducationScreen extends ConsumerWidget {
   const EducationScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final aqi = ref.watch(aqiProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Edukasi Udara')),
-      body: ListView.builder(
+      body: ListView(
         padding: const EdgeInsets.all(16),
-        itemCount: _articles.length,
-        itemBuilder: (context, i) {
-          final a = _articles[i];
-          return Card(
-            child: ListTile(
-              leading: Text(a.icon, style: const TextStyle(fontSize: 28)),
-              title: Text(a.title),
-              subtitle: Text(a.body,
-                  maxLines: 2, overflow: TextOverflow.ellipsis),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => _ArticleDetail(article: a)),
+        children: [
+          // ── Kartu live: konteks AQI user saat ini ──
+          aqi.maybeWhen(
+            data: (r) {
+              final c = AqiHelper.color(r.usAqi);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: GlassCard(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      c.withValues(alpha: 0.16),
+                      Colors.white.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('UDARA LU SEKARANG',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.4)),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Text('${r.usAqi}',
+                              style: TextStyle(
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w800,
+                                  color: c,
+                                  height: 1.0)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                                '${AqiHelper.category(r.usAqi)} • ${r.placeName}',
+                                style: const TextStyle(
+                                    color: Color(0xFFE2E8F0),
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      ActivityCard(aqi: r.usAqi),
+                      const SizedBox(height: 6),
+                      Text(
+                          'Penjelasan lengkap skala & batas aman ada di artikel bawah.',
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.45),
+                              fontSize: 11.5)),
+                    ],
+                  ),
+                ),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
+          // ── 6 artikel (PRD) ──
+          for (final a in _articles)
+            Card(
+              child: ListTile(
+                leading: Text(a.icon, style: const TextStyle(fontSize: 28)),
+                title: Text(a.title),
+                subtitle: Text(a.body,
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => _ArticleDetail(article: a)),
+                ),
               ),
             ),
-          );
-        },
+        ],
       ),
     );
   }

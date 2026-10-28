@@ -6,6 +6,7 @@ class AppConstants {
 
   static const cacheTtlMinutes = 30;
   static const maxFavorites = 5;
+  static const onboardedKey = 'lumair_onboarded';
 
   static const openMeteoBase = 'https://air-quality-api.open-meteo.com/v1/air-quality';
   static const geocodingBase = 'https://geocoding-api.open-meteo.com/v1/search';

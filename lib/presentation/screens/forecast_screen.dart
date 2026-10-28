@@ -4,16 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/aqi_helper.dart';
 import '../../domain/providers.dart';
+import '../widgets/glass.dart';
 
-/// Prakiraan AQI 24 jam (grafik) — dari Open-Meteo hourly.
+/// Prakiraan: chart 24 jam + ringkasan 4 hari — dari Open-Meteo hourly.
 class ForecastScreen extends ConsumerWidget {
   const ForecastScreen({super.key});
+
+  static const _hari = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final forecast = ref.watch(forecastProvider);
+    final daily = ref.watch(dailyForecastProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Prakiraan 24 Jam')),
+      appBar: AppBar(title: const Text('Prakiraan Udara')),
       body: forecast.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Gagal memuat: $e')),
@@ -32,6 +36,69 @@ class ForecastScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // ── Ringkasan 4 hari ──
+              daily.maybeWhen(
+                data: (days) => days.isEmpty
+                    ? const SizedBox.shrink()
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Ringkasan 4 hari',
+                              style: TextStyle(
+                                  color: Color(0xFFE2E8F0),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15)),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              for (var i = 0; i < days.length; i++) ...[
+                                if (i > 0) const SizedBox(width: 8),
+                                Expanded(
+                                  child: GlassCard(
+                                    radius: 16,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 6),
+                                    child: Column(
+                                      children: [
+                                        Text(_hari[days[i].day.weekday - 1],
+                                            style: TextStyle(
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.55),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600)),
+                                        const SizedBox(height: 6),
+                                        Text('${days[i].maxAqi}',
+                                            style: TextStyle(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.w800,
+                                                color: AqiHelper.color(
+                                                    days[i].maxAqi))),
+                                        Text(AqiHelper.category(days[i].maxAqi),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                                color: AqiHelper.color(
+                                                    days[i].maxAqi),
+                                                fontSize: 10)),
+                                        const SizedBox(height: 4),
+                                        Text('puncak ${days[i].peakHour}:00',
+                                            style: TextStyle(
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.4),
+                                                fontSize: 9.5)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                      ),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              // ── Chart 24 jam ──
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
