@@ -33,9 +33,9 @@ class LumairApp extends StatelessWidget {
   }
 }
 
-/// Durasi minimal splash tampil, supaya animasi pembuka sempat selesai
-/// (di web flag onboarding terbaca sangat cepat).
-const kSplashMinDuration = Duration(milliseconds: 1800);
+/// Durasi minimal splash tampil — cukup buat intro logo (scale + fade)
+/// selesai terasa, tanpa ngehang lama. (di web flag onboarding terbaca cepat)
+const kSplashMinDuration = Duration(milliseconds: 900);
 
 /// Gate peluncuran: splash animasi (durasi minimal) → onboarding (1x) →
 /// navigasi utama.
@@ -69,7 +69,8 @@ class _RootGateState extends State<_RootGate> {
     try {
       final p = await SharedPreferences.getInstance();
       if (!mounted) return;
-      setState(() => _onboarded = p.getBool(AppConstants.onboardedKey) ?? false);
+      setState(
+          () => _onboarded = p.getBool(AppConstants.onboardedKey) ?? false);
     } catch (_) {
       if (!mounted) return;
       setState(() => _onboarded = true); // gagal baca → skip onboarding
@@ -87,18 +88,32 @@ class _RootGateState extends State<_RootGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (_onboarded == null || !_splashDone) return const _SplashScreen();
-    if (_onboarded == false) {
-      return OnboardingScreen(onDone: _finishOnboarding);
+    final Widget child;
+    if (_onboarded == null || !_splashDone) {
+      child =
+          const KeyedSubtree(key: ValueKey('splash'), child: _SplashScreen());
+    } else if (_onboarded == false) {
+      child = KeyedSubtree(
+          key: const ValueKey('onboarding'),
+          child: OnboardingScreen(onDone: _finishOnboarding));
+    } else {
+      child = const KeyedSubtree(key: ValueKey('nav'), child: _RootNav());
     }
-    return const _RootNav();
+    // Perbedaan antar-state di-fade halus — splash gak nyolot langsung ganti.
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 380),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: child,
+    );
   }
 }
 
-/// Splash animasi: logo muncul di tengah (scale + fade), background aurora
-/// berputar pelan dengan blob cahaya bergerak, cincin pulse mengembang dari
-/// logo. Tanpa timer — tampil sampai flag onboarding selesai dibaca. Teks
-/// brand tidak ditulis di sini supaya asersi test 'LUMAIR' tetap tepat 1x.
+/// Splash animasi: logo muncul di tengah (scale + fade), latar aurora samar
+/// berputar pelan dengan blob cahaya lembut. Tanpa timer — tampil sampai
+/// flag onboarding selesai dibaca, lalu transisi fade via [AnimatedSwitcher]
+/// di _RootGate. Teks brand tidak ditulis di sini supaya asersi test 'LUMAIR'
+/// tetap tepat 1x.
 class _SplashScreen extends StatefulWidget {
   const _SplashScreen();
 
@@ -110,7 +125,7 @@ class _SplashScreenState extends State<_SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _intro = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 950),
+    duration: const Duration(milliseconds: 800),
   )..forward();
   late final AnimationController _ambient = AnimationController(
     vsync: this,
@@ -179,8 +194,6 @@ class _SplashFrame extends StatelessWidget {
   final double ambient;
   final double glow;
 
-  static double _l(double a, double b, double t) => a + (b - a) * t;
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
@@ -201,7 +214,8 @@ class _SplashFrame extends StatelessWidget {
               ),
             ),
           ),
-          // Aurora: sapuan warna hijau-biru transparan berputar pelan.
+          // Aurora: sapuan warna hijau-biru sangat tipis, berputar pelan —
+          // cukup untuk nuansa hidup, bukan perhatian utama.
           Opacity(
             opacity: 0.9,
             child: Transform.rotate(
@@ -211,9 +225,9 @@ class _SplashFrame extends StatelessWidget {
                   gradient: SweepGradient(
                     colors: [
                       Color(0x0010B981),
-                      Color(0x2610B981),
+                      Color(0x1610B981),
                       Color(0x0010B981),
-                      Color(0x1F0EA5E9),
+                      Color(0x120EA5E9),
                       Color(0x0010B981),
                     ],
                     stops: [0.0, 0.25, 0.5, 0.75, 1.0],
@@ -222,30 +236,16 @@ class _SplashFrame extends StatelessWidget {
               ),
             ),
           ),
-          // Dua blob cahaya yang bergerak lambat bolak-balik.
+          // Dua blob cahaya samar yang bergerak lambat.
           Positioned(
             top: size.height * 0.14 + math.sin(t) * 26,
             right: size.width * 0.12 + math.cos(t) * 34,
-            child: _blob(const Color(0x1F34D399), 300),
+            child: _blob(const Color(0x1434D399), 260),
           ),
           Positioned(
             bottom: size.height * 0.16 + math.cos(t) * 22,
             left: size.width * 0.08 + math.sin(t) * 30,
-            child: _blob(const Color(0x170EA5E9), 260),
-          ),
-          // Cincin pulse mengembang dari tengah.
-          Center(
-            child: SizedBox(
-              width: 320,
-              height: 320,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  for (var i = 0; i < 3; i++)
-                    _ring((ambient + i / 3) % 1, logoFade),
-                ],
-              ),
-            ),
+            child: _blob(const Color(0x100EA5E9), 230),
           ),
           // Logo di tengah: scale + fade masuk, lalu float lembut.
           Center(
@@ -331,23 +331,6 @@ class _SplashFrame extends StatelessWidget {
       ),
     );
   }
-
-  Widget _ring(double phase, double fade) {
-    final appear = (phase / 0.08).clamp(0.0, 1.0);
-    final opacity = (1 - phase) * 0.26 * appear * fade;
-    final size = _l(130, 310, phase);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFF34D399).withValues(alpha: opacity),
-          width: 1.6,
-        ),
-      ),
-    );
-  }
 }
 
 class _RootNav extends StatefulWidget {
@@ -392,8 +375,9 @@ class _RootNavState extends State<_RootNav> {
   @override
   Widget build(BuildContext context) {
     // Hormati pengaturan aksesibilitas "kurangi animasi".
-    final dur =
-        MediaQuery.of(context).disableAnimations ? Duration.zero : kSlideDuration;
+    final dur = MediaQuery.of(context).disableAnimations
+        ? Duration.zero
+        : kSlideDuration;
 
     return Scaffold(
       body: Stack(
