@@ -37,13 +37,28 @@ void main() {
     await tester.pump(kSplashMinDuration + const Duration(milliseconds: 100));
 
     expect(find.text('LUMAIR'), findsOneWidget);
-    // Bottom nav: 5 item, index awal 0. (Assert byIcon di-skip: codepoint
+    // Bottom nav: 6 item, index awal 0. (Assert byIcon di-skip: codepoint
     // font Material Symbols tidak stabil antar run di env ini.)
     final bar = tester.widget<BottomNavigationBar>(
         find.byType(BottomNavigationBar));
-    expect(bar.items.length, 5);
+    expect(bar.items.length, 6);
     expect(bar.currentIndex, 0);
     expect(find.text('Beranda'), findsOneWidget); // tab aktif awal
+  });
+
+  testWidgets('Tab Komunitas tampil & punya pintu laporan', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({'lumair_onboarded': true});
+    await tester.pumpWidget(const ProviderScope(child: LumairApp()));
+    await tester.pump();
+    await tester.pump(kSplashMinDuration + const Duration(milliseconds: 100));
+    await tester.pump();
+
+    await tester.tap(find.text('Komunitas'));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Laporan Komunitas'), findsOneWidget);
+    // Tanpa kredensial Supabase (default test) → kartu info backend.
+    expect(find.text('Belum terhubung ke backend'), findsOneWidget);
   });
 
   testWidgets('Map tab renders FlutterMap with AQI pin', (WidgetTester tester) async {

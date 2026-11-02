@@ -12,10 +12,14 @@ import 'presentation/screens/forecast_screen.dart';
 import 'presentation/screens/home_screen.dart';
 import 'presentation/screens/map_screen.dart';
 import 'presentation/screens/onboarding_screen.dart';
+import 'presentation/screens/community_screen.dart';
+import 'data/services/supabase_service.dart';
 import 'presentation/widgets/slide_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Supabase (auth + laporan): aman tanpa kredensial — app tetap jalan.
+  await SupabaseService.init();
   runApp(const ProviderScope(child: LumairApp()));
 }
 
@@ -352,6 +356,7 @@ class _RootNavState extends State<_RootNav> {
     MapScreen(),
     FavoritesScreen(),
     EducationScreen(),
+    CommunityScreen(),
   ];
 
   void _select(int i) {
@@ -434,6 +439,10 @@ class _RootNavState extends State<_RootNav> {
                   icon: Icon(Icons.school_outlined),
                   activeIcon: Icon(Icons.school),
                   label: 'Edukasi'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.campaign_outlined),
+                  activeIcon: Icon(Icons.campaign),
+                  label: 'Komunitas'),
             ],
           ),
         ),
