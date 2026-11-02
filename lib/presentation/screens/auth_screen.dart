@@ -164,11 +164,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                             ),
                             if (_success) ...[
                               const SizedBox(height: 12),
-                              Center(
+                              const Center(
                                 child: GlassChip(
                                   icon: Icons.check_circle_outline,
                                   label: 'Berhasil masuk — kembali ke halaman',
-                                  color: const Color(0xFF34D399),
+                                  color: Color(0xFF34D399),
                                 ),
                               ),
                             ],
@@ -276,24 +276,24 @@ class _NotConfiguredCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: GlassCard(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.settings_input_component_outlined,
+                Icon(Icons.settings_input_component_outlined,
                     color: Color(0xFFFBBF24), size: 44),
-                const SizedBox(height: 12),
-                const Text('Backend belum terhubung',
+                SizedBox(height: 12),
+                Text('Backend belum terhubung',
                     style: TextStyle(
                         color: Color(0xFFE2E8F0),
                         fontWeight: FontWeight.w800,
                         fontSize: 15)),
-                const SizedBox(height: 8),
-                const Text(
+                SizedBox(height: 8),
+                Text(
                   'Fitur akun & laporan butuh kredensial Supabase. '
                   'Jalankan app dengan --dart-define=SUPABASE_URL=... dan '
                   '--dart-define=SUPABASE_ANON_KEY=... (panduan di README).',

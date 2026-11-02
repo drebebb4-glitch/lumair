@@ -19,7 +19,7 @@ class SupabaseService {
 
   static Future<void> init() async {
     if (!isConfigured) return;
-    await Supabase.initialize(url: _url, anonKey: _anonKey);
+    await Supabase.initialize(url: _url, publishableKey: _anonKey);
   }
 
   static SupabaseClient get client => Supabase.instance.client;

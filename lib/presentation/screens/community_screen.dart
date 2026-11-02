@@ -73,23 +73,24 @@ class _NotConfiguredView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: GlassCard(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_sync_outlined,
+            Icon(Icons.cloud_sync_outlined,
                 color: Color(0xFFFBBF24), size: 42),
-            const SizedBox(height: 10),
-            const Text('Belum terhubung ke backend',
+            SizedBox(height: 10),
+            Text('Belum terhubung ke backend',
                 style: TextStyle(
                     color: Color(0xFFE2E8F0), fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            const Text(
+            SizedBox(height: 6),
+            Text(
               'Laporan butuh kredensial Supabase via --dart-define. '
               'Lihat panduan di README repo.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5, height: 1.5),
+              style:
+                  TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5, height: 1.5),
             ),
           ],
         ),
