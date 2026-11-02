@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' show Session;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show AuthApiException, Session, SupabaseClient;
 
 import '../data/services/supabase_service.dart';
 

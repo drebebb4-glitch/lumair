@@ -96,8 +96,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                           dividerColor: Colors.transparent,
                           labelColor: const Color(0xFF34D399),
                           unselectedLabelColor: const Color(0xFF64748B),
-                          titleTextStyle: const TextStyle(
-                              fontSize: 13.5, fontWeight: FontWeight.w800),
                           labelStyle: const TextStyle(
                               fontSize: 13.5, fontWeight: FontWeight.w800),
                           tabs: const [
