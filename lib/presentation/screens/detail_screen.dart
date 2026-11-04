@@ -90,221 +90,270 @@ class DetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF070B14),
       appBar: AppBar(title: Text('Detail • ${reading.placeName}')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        children: [
-          // ── Ringkasan ──
-          GlassCard(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                aqiColor.withValues(alpha: 0.20),
-                Colors.white.withValues(alpha: 0.05),
-              ],
-            ),
-            child: Row(
+      // Layout responsif (orientation): portrait → ringkasan di atas,
+      // kartu polutan menyusul ke bawah. Landscape → ringkasan nempel
+      // di kolom kiri (tetap terlihat), daftar polutan jadi kolom kanan,
+      // 12 grid pada layar lebar.
+      body: OrientationBuilder(
+        builder: (context, orientation) {
+          final landscape = orientation == Orientation.landscape;
+          if (landscape) {
+            return Row(
               children: [
-                Text('${reading.usAqi}',
-                    style: TextStyle(
-                        fontSize: 46,
-                        fontWeight: FontWeight.w800,
-                        color: aqiColor,
-                        height: 1.0,
-                        letterSpacing: -1)),
-                const SizedBox(width: 14),
+                SizedBox(
+                  width: 260,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 4, 24),
+                    child: _summaryCard(aqiColor),
+                  ),
+                ),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: LayoutBuilder(builder: (context, c) {
+                    final wide = c.maxWidth >= 560;
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(4, 8, 16, 24),
+                      children: [
+                        if (wide) _pollutantsWrap(aqiColor) else ..._pollutantCards(aqiColor),
+                      ],
+                    );
+                  }),
+                ),
+              ],
+            );
+          }
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              _summaryCard(aqiColor),
+              const SizedBox(height: 10),
+              ..._pollutantCards(aqiColor),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  List<Widget> _pollutantCards(Color aqiColor) => _items()
+      .map((p) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _pollutantCard(p, aqiColor),
+          ))
+      .toList();
+
+  Widget _pollutantsWrap(Color aqiColor) => Wrap(
+        runSpacing: 10,
+        spacing: 10,
+        children: _items()
+            .map((p) => SizedBox(
+                  width: 260,
+                  child: _pollutantCard(p, aqiColor),
+                ))
+            .toList(),
+      );
+
+  Widget _summaryCard(Color aqiColor) => GlassCard(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            aqiColor.withValues(alpha: 0.20),
+            Colors.white.withValues(alpha: 0.05),
+          ],
+        ),
+        child: Row(
+          children: [
+            Text('${reading.usAqi}',
+                style: TextStyle(
+                    fontSize: 46,
+                    fontWeight: FontWeight.w800,
+                    color: aqiColor,
+                    height: 1.0,
+                    letterSpacing: -1)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      'AQI ${reading.usAqi} — ${AqiHelper.category(reading.usAqi)}',
+                      style: const TextStyle(
+                          color: Color(0xFFE2E8F0),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15)),
+                  const SizedBox(height: 3),
+                  Text(
+                      'Dominan: ${AqiHelper.dominantLabel(reading.dominant)}${reading.fromCache ? ' • offline' : ''}',
+                      style: const TextStyle(
+                          color: Color(0xFF94A3B8), fontSize: 13)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _pollutantCard(_PollutantInfo p, Color aqiColor) {
+    final over = p.value >= p.warnAt;
+    final ratio = (p.value / p.warnAt).clamp(0.05, 1.0);
+    final barColor = over ? const Color(0xFFEF4444) : const Color(0xFF10B981);
+    final isDominant = reading.dominant == p.key;
+    return GlassCard(
+      radius: 20,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: barColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: barColor.withValues(alpha: 0.40)),
+                ),
+                child: Icon(p.icon, color: barColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(p.name,
+                    style: const TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontWeight: FontWeight.w600)),
+              ),
+              if (isDominant)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: aqiColor.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                        color: aqiColor.withValues(alpha: 0.55)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                          'AQI ${reading.usAqi} — ${AqiHelper.category(reading.usAqi)}',
-                          style: const TextStyle(
-                              color: Color(0xFFE2E8F0),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15)),
-                      const SizedBox(height: 3),
-                      Text(
-                          'Dominan: ${AqiHelper.dominantLabel(reading.dominant)}${reading.fromCache ? ' • offline' : ''}',
-                          style: const TextStyle(
-                              color: Color(0xFF94A3B8), fontSize: 13)),
+                      Icon(Icons.blur_on, size: 12, color: aqiColor),
+                      const SizedBox(width: 3),
+                      Text('DOMINAN',
+                          style: TextStyle(
+                              color: aqiColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1)),
                     ],
                   ),
                 ),
-              ],
-            ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(p.value.toStringAsFixed(1),
+                  style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: over
+                          ? const Color(0xFFF87171)
+                          : const Color(0xFFE2E8F0))),
+              const SizedBox(width: 6),
+              Text(p.unit,
+                  style: const TextStyle(
+                      color: Color(0xFF94A3B8), fontSize: 12)),
+              const Spacer(),
+              if (over)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text('melebihi batas',
+                      style: TextStyle(
+                          color: Color(0xFFF87171),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700)),
+                ),
+            ],
           ),
           const SizedBox(height: 10),
-          // ── Kartu polutan ──
-          ..._items().map((p) {
-            final over = p.value >= p.warnAt;
-            final ratio = (p.value / p.warnAt).clamp(0.05, 1.0);
-            final barColor = over ? const Color(0xFFEF4444) : const Color(0xFF10B981);
-            final isDominant = reading.dominant == p.key;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: GlassCard(
-                radius: 20,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: barColor.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color: barColor.withValues(alpha: 0.40)),
-                          ),
-                          child: Icon(p.icon, color: barColor, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(p.name,
-                              style: const TextStyle(
-                                  color: Color(0xFFE2E8F0),
-                                  fontWeight: FontWeight.w600)),
-                        ),
-                        if (isDominant)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: aqiColor.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                  color: aqiColor.withValues(alpha: 0.55)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.blur_on, size: 12, color: aqiColor),
-                                const SizedBox(width: 3),
-                                Text('DOMINAN',
-                                    style: TextStyle(
-                                        color: aqiColor,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 1)),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(p.value.toStringAsFixed(1),
-                            style: TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w800,
-                                color: over
-                                    ? const Color(0xFFF87171)
-                                    : const Color(0xFFE2E8F0))),
-                        const SizedBox(width: 6),
-                        Text(p.unit,
-                            style: const TextStyle(
-                                color: Color(0xFF94A3B8), fontSize: 12)),
-                        const Spacer(),
-                        if (over)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: const Text('melebihi batas',
-                                style: TextStyle(
-                                    color: Color(0xFFF87171),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700)),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    // Bar gradient animasi.
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0, end: ratio),
-                      duration: const Duration(milliseconds: 900),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, v, _) => ClipRRect(
-                        borderRadius: BorderRadius.circular(999),
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 10,
-                              color: Colors.white.withValues(alpha: 0.08),
-                            ),
-                            FractionallySizedBox(
-                              widthFactor: v,
-                              child: Container(
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      barColor.withValues(alpha: 0.65),
-                                      barColor,
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
+          // Bar gradient animasi.
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: ratio),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.easeOutCubic,
+            builder: (context, v, _) => ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: Stack(
+                children: [
+                  Container(
+                    height: 10,
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                  FractionallySizedBox(
+                    widthFactor: v,
+                    child: Container(
+                      height: 10,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            barColor.withValues(alpha: 0.65),
+                            barColor,
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    // Batas aman ditulis eksplisit + status rasio.
-                    Row(
-                      children: [
-                        Text('Batas aman',
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.45),
-                                fontSize: 11.5)),
-                        const Spacer(),
-                        Text('${p.warnAt.toStringAsFixed(0)} ${p.unit}',
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.65),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600)),
-                        if (over) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 7, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444)
-                                  .withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                                '${(p.value / p.warnAt).toStringAsFixed(1)}× batas',
-                                style: const TextStyle(
-                                    color: Color(0xFFF87171),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700)),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(p.desc,
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 12.5,
-                            height: 1.4)),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            );
-          }),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Batas aman ditulis eksplisit + status rasio.
+          Row(
+            children: [
+              Text('Batas aman',
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.45),
+                      fontSize: 11.5)),
+              const Spacer(),
+              Text('${p.warnAt.toStringAsFixed(0)} ${p.unit}',
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.65),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600)),
+              if (over) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444)
+                        .withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                      '${(p.value / p.warnAt).toStringAsFixed(1)}× batas',
+                      style: const TextStyle(
+                          color: Color(0xFFF87171),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(p.desc,
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 12.5,
+                  height: 1.4)),
         ],
       ),
     );

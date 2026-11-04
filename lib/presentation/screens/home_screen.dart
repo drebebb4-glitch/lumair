@@ -4,11 +4,13 @@ import '../../core/aqi_helper.dart';
 import '../../core/cities.dart';
 import '../../domain/models/air_quality.dart';
 import '../../domain/providers.dart';
+import '../../domain/auth_provider.dart';
 import '../widgets/aurora_background.dart';
 import '../widgets/glass.dart';
 import '../widgets/aqi_gauge.dart';
 import '../widgets/scale_strip.dart';
 import '../widgets/activity_card.dart';
+import 'auth_screen.dart';
 import 'detail_screen.dart';
 import 'forecast_screen.dart';
 import 'favorites_screen.dart';
@@ -62,9 +64,9 @@ class HomeScreen extends ConsumerWidget {
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-                  children: [
-                    _header(r.fromCache),
-                    const SizedBox(height: 14),
+                    children: [
+                     _HomeHeader(fromCache: r.fromCache),
+                     const SizedBox(height: 14),
 
                     // ── Banner status lokasi/internet ──
                     if (gpsFallback)
@@ -360,49 +362,94 @@ class HomeScreen extends ConsumerWidget {
       },
     );
   }
+}
 
-  Widget _header(bool fromCache) => SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Row(
-            children: [
-              Image.asset(
-                'assets/logo.png',
+/// Header beranda — logo + chip offline + tombol akun (avatar).
+/// Tombol akun membuka profil bila sudah login, layar masuk/daftar
+/// bila belum.
+class _HomeHeader extends ConsumerWidget {
+  final bool fromCache;
+  const _HomeHeader({required this.fromCache});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authUserProvider);
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Row(
+          children: [
+            Image.asset(
+              'assets/logo.png',
+              width: 40,
+              height: 40,
+              fit: BoxFit.contain,
+              semanticLabel: 'Logo LUMAIR',
+              errorBuilder: (_, __, ___) => Container(
                 width: 40,
                 height: 40,
-                fit: BoxFit.contain,
-                semanticLabel: 'Logo LUMAIR',
-                errorBuilder: (_, __, ___) => Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.air, color: Colors.white),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
+                  borderRadius: BorderRadius.circular(14),
                 ),
+                child: const Icon(Icons.air, color: Colors.white),
               ),
-              const SizedBox(width: 12),
-              Text(
-                'LUMAIR',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 2.5,
-                  color: Colors.white.withValues(alpha: 0.95),
-                ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'LUMAIR',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2.5,
+                color: Colors.white.withValues(alpha: 0.95),
               ),
-              const Spacer(),
-              if (fromCache)
-                const GlassChip(icon: Icons.cloud_off_outlined, label: 'offline'),
-            ],
-          ),
+            ),
+            const Spacer(),
+            if (fromCache)
+              const GlassChip(icon: Icons.cloud_off_outlined, label: 'offline'),
+            const SizedBox(width: 8),
+            InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AuthScreen()),
+              ),
+              child: auth == null
+                  ? Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.08),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.22)),
+                      ),
+                      child: const Icon(Icons.person_outline,
+                          color: Color(0xFFCBD5E1), size: 20),
+                    )
+                  : CircleAvatar(
+                      radius: 19,
+                      backgroundColor: const Color(0xFF34D399),
+                      child: Text(
+                        auth.displayName.isEmpty
+                            ? '?'
+                            : auth.displayName[0].toUpperCase(),
+                        style: const TextStyle(
+                            color: Color(0xFF06111F),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15),
+                      ),
+                    ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
 
 Widget _sectionLabel(String s) => Text(s,
