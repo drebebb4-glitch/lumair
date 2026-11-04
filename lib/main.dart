@@ -96,7 +96,7 @@ class _SplashScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'assets/logo.png',
+              'assets/logo-mark.png',
               width: 96,
               height: 96,
               fit: BoxFit.contain,

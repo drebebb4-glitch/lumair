@@ -35,6 +35,7 @@ flutter:
   assets:
     - assets/dummy/
     - assets/logo.png
+    - assets/logo-mark.png
   fonts:
     - family: Plus Jakarta Sans
       fonts:

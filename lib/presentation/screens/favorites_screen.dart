@@ -70,7 +70,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
         centerTitle: false,
         title: Row(
           children: [
-            Image.asset('assets/logo.png',
+            Image.asset('assets/logo-mark.png',
                 width: 32,
                 height: 32,
                 fit: BoxFit.contain,

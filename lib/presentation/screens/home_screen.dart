@@ -381,7 +381,7 @@ class _HomeHeader extends ConsumerWidget {
         child: Row(
           children: [
             Image.asset(
-              'assets/logo.png',
+              'assets/logo-mark.png',
               width: 40,
               height: 40,
               fit: BoxFit.contain,
