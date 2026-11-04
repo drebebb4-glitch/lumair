@@ -78,4 +78,20 @@ void main() {
     expect(comments.single.reportId, report.id);
     expect(comments.single.penulis, 'Rani');
   });
+
+  test('parses a Supabase report comment', () {
+    final comment = ReportComment.fromJson({
+      'id': 'comment-1',
+      'report_id': 'report-1',
+      'user_id': 'user-1',
+      'penulis': 'Rani',
+      'isi': 'Hati-hati saat melintas.',
+      'created_at': '2026-11-04T08:15:00Z',
+    });
+
+    expect(comment.id, 'comment-1');
+    expect(comment.reportId, 'report-1');
+    expect(comment.penulis, 'Rani');
+    expect(comment.isi, 'Hati-hati saat melintas.');
+  });
 }

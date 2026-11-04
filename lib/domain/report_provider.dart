@@ -133,11 +133,26 @@ final reportsProvider =
       .toList();
 });
 
-final reportCommentsProvider = FutureProvider.autoDispose
-    .family<List<ReportComment>, ReportEntry>((ref, entry) async {
+final reportCommentsProvider = StreamProvider.autoDispose
+    .family<List<ReportComment>, ReportEntry>((ref, entry) async* {
   final json = await rootBundle.loadString('assets/dummy/report_comments.json');
   final samples = jsonDecode(json) as Map<String, dynamic>;
-  return localCommentsForReport(entry, samples);
+  final localComments = localCommentsForReport(entry, samples);
+  if (!SupabaseService.isConfigured) {
+    yield localComments;
+    return;
+  }
+
+  final remoteStream = SupabaseService.client
+      .from('report_comments')
+      .stream(primaryKey: ['id'])
+      .eq('report_id', entry.id)
+      .order('created_at');
+  await for (final rawComments in remoteStream) {
+    final remoteComments = rawComments.map(ReportComment.fromJson);
+    yield [...localComments, ...remoteComments]
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  }
 });
 
 List<ReportComment> localCommentsForReport(
@@ -164,6 +179,71 @@ List<ReportComment> localCommentsForReport(
   comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
   return comments;
 }
+
+class ReportCommentsController {
+  final Ref ref;
+  ReportCommentsController(this.ref);
+
+  Future<ReportOutcome> submit({
+    required ReportEntry entry,
+    required String isi,
+  }) async {
+    final user = ref.read(authUserProvider);
+    if (user == null) {
+      return const ReportOutcome(
+        success: false,
+        message: 'Masuk dulu untuk memberi komentar.',
+      );
+    }
+    final text = isi.trim();
+    if (text.isEmpty) {
+      return const ReportOutcome(
+        success: false,
+        message: 'Komentar tidak boleh kosong.',
+      );
+    }
+    if (!SupabaseService.isConfigured) {
+      return const ReportOutcome(
+        success: false,
+        message: 'Supabase belum dikonfigurasi untuk aplikasi ini.',
+      );
+    }
+
+    try {
+      await SupabaseService.client.from('report_comments').insert({
+        'report_id': entry.id,
+        'user_id': user.id,
+        'penulis': user.displayName,
+        'isi': text,
+      });
+      ref.invalidate(reportCommentsProvider(entry));
+      return const ReportOutcome(
+        success: true,
+        message: 'Komentar terkirim.',
+      );
+    } catch (error) {
+      final details = '$error';
+      if (details.contains('PGRST205') ||
+          details.contains('42P01') ||
+          details.contains('schema cache')) {
+        return const ReportOutcome(
+          success: false,
+          message:
+              'Tabel komentar belum tersedia. Jalankan supabase/schema.sql di Supabase SQL Editor.',
+        );
+      }
+      return ReportOutcome(
+        success: false,
+        message: 'Gagal mengirim komentar: $details',
+      );
+    }
+  }
+}
+
+final reportCommentsControllerProvider =
+    Provider<ReportCommentsController>((ref) {
+  return ReportCommentsController(ref);
+});
 
 class ReportOutcome {
   final bool success;

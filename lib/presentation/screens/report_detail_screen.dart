@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/auth_provider.dart';
 import '../../domain/report_provider.dart';
+import '../../data/services/supabase_service.dart';
 import '../widgets/glass.dart';
+import 'auth_screen.dart';
 
-class ReportDetailScreen extends ConsumerWidget {
+class ReportDetailScreen extends ConsumerStatefulWidget {
   const ReportDetailScreen({
     super.key,
     required this.entry,
@@ -15,124 +18,267 @@ class ReportDetailScreen extends ConsumerWidget {
   final VoidCallback onOpenMap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final entry = this.entry;
+  ConsumerState<ReportDetailScreen> createState() => _ReportDetailScreenState();
+}
+
+class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
+  final _commentController = TextEditingController();
+  bool _showComments = false;
+  bool _sending = false;
+  String? _message;
+  bool _sendFailed = false;
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _addComment() async {
+    if (_sending) return;
+    setState(() {
+      _sending = true;
+      _message = null;
+    });
+    try {
+      final result = await ref.read(reportCommentsControllerProvider).submit(
+            entry: widget.entry,
+            isi: _commentController.text,
+          );
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _message = result.message;
+        _sendFailed = !result.success;
+      });
+      if (result.success) _commentController.clear();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _message = 'Komentar gagal disimpan: $error';
+        _sendFailed = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = widget.entry;
+    final user = ref.watch(authUserProvider);
     final comments = ref.watch(reportCommentsProvider(entry));
+    final commentCount = comments.valueOrNull?.length ?? 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Detail laporan')),
-      body: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-        children: [
-          GlassCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final category in entry.kategori)
-                      _CategoryChip(category: category),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  entry.deskripsi,
-                  style: const TextStyle(
-                    color: Color(0xFFE2E8F0),
-                    fontSize: 15,
-                    height: 1.5,
+      body: RefreshIndicator(
+        onRefresh: () => ref.refresh(reportCommentsProvider(entry).future),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+          children: [
+            GlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final category in entry.kategori)
+                        _CategoryChip(category: category),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                _DetailLine(
-                  icon: Icons.location_city_outlined,
-                  title: entry.kota,
-                  subtitle: entry.lokasi.isEmpty ? null : entry.lokasi,
-                ),
-                if (entry.hasCoordinates) ...[
-                  const SizedBox(height: 10),
-                  _DetailLine(
-                    icon: Icons.my_location,
-                    title:
-                        '${entry.lat!.toStringAsFixed(5)}, ${entry.lon!.toStringAsFixed(5)}',
-                    subtitle: 'Titik lokasi laporan',
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: onOpenMap,
-                      icon: const Icon(Icons.map_outlined),
-                      label: const Text('Lihat titik ini di peta'),
+                  const SizedBox(height: 14),
+                  Text(
+                    entry.deskripsi,
+                    style: const TextStyle(
+                      color: Color(0xFFE2E8F0),
+                      fontSize: 15,
+                      height: 1.5,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  _DetailLine(
+                    icon: Icons.location_city_outlined,
+                    title: entry.kota,
+                    subtitle: entry.lokasi.isEmpty ? null : entry.lokasi,
+                  ),
+                  if (entry.hasCoordinates) ...[
+                    const SizedBox(height: 10),
+                    _DetailLine(
+                      icon: Icons.my_location,
+                      title:
+                          '${entry.lat!.toStringAsFixed(5)}, ${entry.lon!.toStringAsFixed(5)}',
+                      subtitle: 'Titik lokasi laporan',
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onOpenMap,
+                        icon: const Icon(Icons.map_outlined),
+                        label: const Text('Lihat titik ini di peta'),
+                      ),
+                    ),
+                  ],
+                  const Divider(height: 24),
+                  _DetailLine(
+                    icon: Icons.person_outline,
+                    title: entry.penulis,
+                    subtitle: _dateTime(entry.createdAt),
+                  ),
                 ],
-                const Divider(height: 24),
-                _DetailLine(
-                  icon: Icons.person_outline,
-                  title: entry.penulis,
-                  subtitle: _dateTime(entry.createdAt),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Komentar',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: const Color(0xFFE2E8F0),
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                ),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      tooltip: _showComments
+                          ? 'Sembunyikan komentar'
+                          : 'Lihat komentar',
+                      onPressed: () =>
+                          setState(() => _showComments = !_showComments),
+                      icon: Icon(
+                        _showComments
+                            ? Icons.mode_comment
+                            : Icons.mode_comment_outlined,
+                        color: const Color(0xFF34D399),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Container(
+                        constraints:
+                            const BoxConstraints(minWidth: 18, minHeight: 18),
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$commentCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Komentar contoh',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFFE2E8F0),
-                  fontWeight: FontWeight.w800,
+            if (_showComments) ...[
+              const SizedBox(height: 8),
+              comments.when(
+                loading: () => const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
-          ),
-          const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: Text(
-              'Contoh lokal dari assets/dummy/report_comments.json. '
-              'Perbarui file tersebut lalu commit ke GitHub untuk mengganti contoh.',
-              style: TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 12,
-                height: 1.4,
-              ),
-            ),
-          ),
-          comments.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(20),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (error, _) => GlassCard(
-              child: Text(
-                'Komentar gagal dimuat: $error',
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xFFFECACA),
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            data: (items) => items.isEmpty
-                ? const GlassCard(
-                    child: Text(
-                      'Belum ada komentar contoh untuk kategori laporan ini.',
-                      style: TextStyle(color: Color(0xFF94A3B8)),
+                error: (error, _) => GlassCard(
+                  child: Text(
+                    _commentLoadError(error),
+                    style: const TextStyle(
+                      color: Color(0xFFFECACA),
+                      fontSize: 12,
+                      height: 1.4,
                     ),
-                  )
-                : Column(
-                    children: [
+                  ),
+                ),
+                data: (items) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (items.isEmpty)
+                      const GlassCard(
+                        child: Text(
+                          'Belum ada komentar.',
+                          style: TextStyle(color: Color(0xFF94A3B8)),
+                        ),
+                      )
+                    else
                       for (final comment in items) ...[
                         _CommentTile(comment: comment),
                         if (comment != items.last) const SizedBox(height: 8),
                       ],
+                    const SizedBox(height: 12),
+                    if (!SupabaseService.isConfigured)
+                      const GlassCard(
+                        child: Text(
+                          'Komentar online belum dikonfigurasi untuk aplikasi ini.',
+                          style: TextStyle(color: Color(0xFFFECACA)),
+                        ),
+                      )
+                    else if (user == null)
+                      FilledButton.tonalIcon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AuthScreen(),
+                          ),
+                        ),
+                        icon: const Icon(Icons.login),
+                        label: const Text('Masuk untuk berkomentar'),
+                      )
+                    else ...[
+                      TextField(
+                        controller: _commentController,
+                        minLines: 1,
+                        maxLines: 4,
+                        maxLength: 500,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          hintText: 'Tulis komentar…',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      if (_message != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            _message!,
+                            style: TextStyle(
+                              color: _sendFailed
+                                  ? const Color(0xFFF87171)
+                                  : const Color(0xFF34D399),
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ),
+                      FilledButton.icon(
+                        onPressed: _sending ? null : _addComment,
+                        icon: _sending
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.send_outlined),
+                        label: const Text('Tambah komentar'),
+                      ),
                     ],
-                  ),
-          ),
-        ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -259,4 +405,14 @@ String _dateTime(DateTime time) {
       '${local.month.toString().padLeft(2, '0')}/'
       '${local.year} ${local.hour.toString().padLeft(2, '0')}:'
       '${local.minute.toString().padLeft(2, '0')}';
+}
+
+String _commentLoadError(Object error) {
+  final details = '$error';
+  if (details.contains('PGRST205') ||
+      details.contains('42P01') ||
+      details.contains('schema cache')) {
+    return 'Tabel komentar belum tersedia. Jalankan supabase/schema.sql di Supabase SQL Editor.';
+  }
+  return 'Komentar gagal dimuat. Periksa koneksi Supabase, lalu tarik layar untuk mencoba lagi.';
 }
