@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:latlong2/latlong.dart';
 import '../../data/services/supabase_service.dart';
 import '../../domain/auth_provider.dart';
 import '../../domain/providers.dart';
 import '../../domain/report_provider.dart';
 import '../widgets/glass.dart';
 import 'auth_screen.dart';
+import 'map_screen.dart';
+import 'report_detail_screen.dart';
+import '../widgets/report_location_picker.dart';
 
-/// Tab Komunitas LUMAIR — laporan banjir & penutupan jalan.
+/// Tab Komunitas LUMAIR — laporan kondisi dan gangguan lokal.
 /// Struktur: gate (backend/akun) → feed laporan terbaru + FAB
 /// "Lapor" yang membuka sheet form. Setiap orang boleh mengirim
 /// laporan berulang kali; hanya milik sendiri yang bisa dihapus.
@@ -19,7 +24,7 @@ class CommunityScreen extends ConsumerWidget {
     if (!SupabaseService.isConfigured) {
       return const _ScreenFrame(
         title: 'Laporan Komunitas',
-        subtitle: 'Lapor banjir & jalan ditutup agar tetangga tahu dulu lancar',
+        subtitle: 'Bagikan kondisi sekitar dan pantau laporan warga',
         child: _NotConfiguredView(),
       );
     }
@@ -27,7 +32,7 @@ class CommunityScreen extends ConsumerWidget {
     if (user == null) {
       return _ScreenFrame(
         title: 'Laporan Komunitas',
-        subtitle: 'Lapor banjir & jalan ditutup agar tetangga tahu dulu lancar',
+        subtitle: 'Bagikan kondisi sekitar dan pantau laporan warga',
         child: _LoginGateView(onLogin: () async {
           await Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const AuthScreen()),
@@ -37,7 +42,7 @@ class CommunityScreen extends ConsumerWidget {
     }
     return const _ScreenFrame(
       title: 'Laporan Komunitas',
-      subtitle: 'Lapor banjir & jalan ditutup agar tetangga tahu dulu lancar',
+      subtitle: 'Bagikan kondisi sekitar dan pantau laporan warga',
       child: _ReportBody(),
     );
   }
@@ -204,7 +209,7 @@ class _ReportBody extends ConsumerWidget {
                               SizedBox(height: 6),
                               Text(
                                 'Jadi orang pertama! Ketuk tombol + di bawah '
-                                'untuk melapor banjir atau jalan ditutup.',
+                                'untuk membagikan kondisi dan gangguan di sekitar.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     color: Color(0xFF94A3B8),
@@ -228,6 +233,26 @@ class _ReportBody extends ConsumerWidget {
                       return _ReportTile(
                         entry: r,
                         mine: mine,
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ReportDetailScreen(
+                              entry: r,
+                              onOpenMap: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => MapScreen(focusReport: r),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        onOpenMap: r.hasCoordinates
+                            ? () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        MapScreen(focusReport: r),
+                                  ),
+                                )
+                            : null,
                         onDelete: mine
                             ? () async {
                                 final ok = await showDialog<bool>(
@@ -312,10 +337,6 @@ class _ReportBody extends ConsumerWidget {
 }
 
 /// FAB lapor bertumpu di controller provider — biar bisa di-test.
-final reportsControllerProvider = Provider<ReportsController>((ref) {
-  return ReportsController(ref);
-});
-
 class _SoftLoading extends StatelessWidget {
   const _SoftLoading();
 
@@ -344,107 +365,160 @@ class _SoftLoading extends StatelessWidget {
   }
 }
 
-/// Satu tile laporan di feed.
+/// Satu tile laporan di feed; buka detail dan titik lokasinya.
 class _ReportTile extends StatelessWidget {
   final ReportEntry entry;
   final bool mine;
+  final VoidCallback onTap;
+  final VoidCallback? onOpenMap;
   final VoidCallback? onDelete;
-  const _ReportTile({required this.entry, this.mine = false, this.onDelete});
+  const _ReportTile({
+    required this.entry,
+    required this.onTap,
+    this.onOpenMap,
+    this.mine = false,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final isBanjir = entry.isBanjir;
-    final color =
-        isBanjir ? const Color(0xFF38BDF8) : const Color(0xFFFBBF24);
-    final text = isBanjir ? 'BANJIR' : 'JALAN DITUTUP';
-    final icon =
-        isBanjir ? Icons.water_outlined : Icons.construction_outlined;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+    final color = _reportColor(entry.kategori.first);
+    return Material(
+      color: Colors.white.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.10),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withValues(alpha: 0.4)),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: color.withValues(alpha: 0.4)),
+                ),
+                child: Icon(_reportIcon(entry.kategori.first),
+                    color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(text,
-                        style: TextStyle(
-                            color: color,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${entry.kota} · ${_relative(entry.createdAt)}',
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
-                            fontSize: 10.5),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        for (final category in entry.kategori)
+                          Text(
+                            (ReportCategory.labels[category] ?? category)
+                                .toUpperCase(),
+                            style: TextStyle(
+                              color: _reportColor(category),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      '${entry.lokasi.isEmpty ? entry.kota : entry.lokasi} · ${_relative(entry.createdAt)}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        fontSize: 11,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Text(entry.deskripsi,
-                    style: const TextStyle(
+                    const SizedBox(height: 5),
+                    Text(
+                      entry.deskripsi,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
                         color: Color(0xFFE2E8F0),
                         fontSize: 13.5,
-                        height: 1.4)),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    Icon(Icons.person_outline,
-                        size: 13, color: Colors.white.withValues(alpha: 0.45)),
-                    const SizedBox(width: 3),
-                    Expanded(
-                      child: Text(
-                        entry.penulis + (mine ? ' • laporan kamu' : ''),
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            fontSize: 11.5),
+                        height: 1.4,
                       ),
+                    ),
+                    if (onOpenMap != null)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: onOpenMap,
+                          icon: const Icon(Icons.map_outlined, size: 15),
+                          label: const Text('Lihat lokasi di peta'),
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            textStyle: const TextStyle(fontSize: 11.5),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline,
+                            size: 13,
+                            color: Colors.white.withValues(alpha: 0.45)),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            '${entry.penulis}${mine ? ' • laporan kamu' : ''}',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              if (onDelete != null)
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.delete_outline,
+                      color: Color(0xFFEF4444), size: 19),
+                  onPressed: onDelete,
+                  tooltip: 'Hapus laporan ini',
+                ),
+            ],
           ),
-          if (onDelete != null)
-            IconButton(
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.delete_outline,
-                  color: Color(0xFFEF4444), size: 19),
-              onPressed: onDelete,
-              tooltip: 'Hapus laporan ini',
-            ),
-        ],
+        ),
       ),
     );
   }
 }
+
+Color _reportColor(String category) => switch (category) {
+      ReportCategory.banjir => const Color(0xFF38BDF8),
+      ReportCategory.tutupJalan => const Color(0xFFFBBF24),
+      ReportCategory.listrikPadam => const Color(0xFFFACC15),
+      ReportCategory.airPadam => const Color(0xFF2DD4BF),
+      ReportCategory.macet => const Color(0xFFFB923C),
+      ReportCategory.kebakaran => const Color(0xFFFB7185),
+      _ => const Color(0xFF94A3B8),
+    };
+
+IconData _reportIcon(String category) => switch (category) {
+      ReportCategory.banjir => Icons.water_outlined,
+      ReportCategory.tutupJalan => Icons.construction_outlined,
+      ReportCategory.listrikPadam => Icons.bolt_outlined,
+      ReportCategory.airPadam => Icons.water_drop_outlined,
+      ReportCategory.macet => Icons.traffic_outlined,
+      ReportCategory.kebakaran => Icons.local_fire_department_outlined,
+      _ => Icons.report_outlined,
+    };
 
 String _relative(DateTime t) {
   final d = DateTime.now().difference(t);
@@ -454,8 +528,7 @@ String _relative(DateTime t) {
   return '${d.inDays} hari lalu';
 }
 
-/// Sheet form laporan: jenis (banjir / tutup jalan), kota auto dari
-/// lokasi GPS/beranda yang aktif, deskripsi bebas.
+/// Form laporan dengan beberapa kategori dan titik kejadian dari peta.
 class _ReportFormSheet extends ConsumerStatefulWidget {
   const _ReportFormSheet();
 
@@ -464,28 +537,78 @@ class _ReportFormSheet extends ConsumerStatefulWidget {
 }
 
 class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
-  String _jenis = ReportEntry.jenisBanjir;
+  final Set<String> _categories = {ReportCategory.banjir};
   late final TextEditingController _kota = TextEditingController();
   final _deskripsi = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _busy = false;
   String? _message;
+  String? _locationLabel;
+  LatLng? _initialPoint;
+  LatLng? _point;
 
   @override
   void initState() {
     super.initState();
-    _prefillKota();
+    _prefillLocation();
   }
 
-  Future<void> _prefillKota() async {
-    // Kota default dari lokasi aktif (pilihan manual/GPS/fallback).
+  Future<void> _prefillLocation() async {
     try {
       final loc = await ref.read(locationProvider.future);
       if (!mounted) return;
       setState(() {
         if (_kota.text.trim().isEmpty) _kota.text = loc.name;
+        _initialPoint ??= LatLng(loc.lat, loc.lon);
       });
-    } catch (_) {}
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _message = 'Gagal mendapatkan lokasi awal: $error');
+    }
+  }
+
+  Future<void> _pickLocation() async {
+    final initial =
+        _point ?? _initialPoint ?? const LatLng(-6.2, 106.816666);
+    final selected = await pickReportLocation(
+      context,
+      initialLocation: initial,
+    );
+    if (selected == null || !mounted) return;
+
+    var locationLabel =
+        '${selected.latitude.toStringAsFixed(5)}, ${selected.longitude.toStringAsFixed(5)}';
+    String? city;
+    try {
+      final marks =
+          await placemarkFromCoordinates(selected.latitude, selected.longitude);
+      if (marks.isNotEmpty) {
+        final mark = marks.first;
+        final detail = [
+          mark.name,
+          mark.street,
+          mark.subLocality,
+          mark.locality,
+          mark.subAdministrativeArea,
+          mark.administrativeArea,
+        ].whereType<String>().map((value) => value.trim()).where((value) {
+          return value.isNotEmpty && value != locationLabel;
+        }).toSet().toList();
+        if (detail.isNotEmpty) locationLabel = detail.join(', ');
+        city = mark.locality?.trim().isNotEmpty == true
+            ? mark.locality
+            : mark.administrativeArea;
+      }
+    } catch (_) {
+      // Koordinat tetap menjadi alamat akurat saat reverse geocoding gagal.
+    }
+    if (!mounted) return;
+    setState(() {
+      _point = selected;
+      _locationLabel = locationLabel;
+      if (city?.trim().isNotEmpty == true) _kota.text = city!.trim();
+      _message = null;
+    });
   }
 
   @override
@@ -497,24 +620,27 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
 
   Future<void> _send() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_categories.isEmpty) {
+      setState(() => _message = 'Pilih setidaknya satu kategori.');
+      return;
+    }
+    final point = _point;
+    if (point == null || _locationLabel == null) {
+      setState(() => _message = 'Pilih titik lokasi laporan melalui peta.');
+      return;
+    }
     setState(() {
       _busy = true;
       _message = null;
     });
-    double? lat;
-    double? lon;
-    try {
-      final loc = await ref.read(locationProvider.future);
-      lat = loc.lat;
-      lon = loc.lon;
-    } catch (_) {}
     final controller = ref.read(reportsControllerProvider);
     final res = await controller.submit(
-      jenis: _jenis,
+      kategori: _categories.toList(),
       kota: _kota.text,
+      lokasi: _locationLabel!,
       deskripsi: _deskripsi.text,
-      lat: lat,
-      lon: lon,
+      lat: point.latitude,
+      lon: point.longitude,
     );
     if (!mounted) return;
     if (res.success) {
@@ -563,34 +689,59 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
               ),
               const SizedBox(height: 14),
 
-              // ── Jenis laporan ──
-              Row(
+              const Text(
+                'Pilih kategori (bisa lebih dari satu)',
+                style: TextStyle(
+                  color: Color(0xFFE2E8F0),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
                 children: [
-                  Expanded(
-                    child: _JenisCard(
-                      icon: Icons.water_outlined,
-                      label: 'Banjir',
-                      sub: 'Genangan / sungai meluap',
-                      color: const Color(0xFF38BDF8),
-                      selected: _jenis == ReportEntry.jenisBanjir,
-                      onTap: () => setState(() => _jenis = ReportEntry.jenisBanjir),
+                  for (final category in ReportCategory.all)
+                    FilterChip(
+                      avatar: Icon(
+                        _reportIcon(category),
+                        size: 17,
+                        color: _categories.contains(category)
+                            ? _reportColor(category)
+                            : const Color(0xFF94A3B8),
+                      ),
+                      label: Text(ReportCategory.labels[category]!),
+                      selected: _categories.contains(category),
+                      onSelected: (selected) => setState(() {
+                        if (selected) {
+                          _categories.add(category);
+                        } else {
+                          _categories.remove(category);
+                        }
+                      }),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _JenisCard(
-                      icon: Icons.construction_outlined,
-                      label: 'Tutup Jalan',
-                      sub: 'Perbaikan / proyek',
-                      color: const Color(0xFFFBBF24),
-                      selected: _jenis == ReportEntry.jenisTutupJalan,
-                      onTap: () => setState(
-                          () => _jenis = ReportEntry.jenisTutupJalan),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _pickLocation,
+                icon: const Icon(Icons.map_outlined),
+                label: Text(_point == null
+                    ? 'Pilih titik lokasi di peta'
+                    : 'Ubah titik lokasi di peta'),
+              ),
+              if (_locationLabel != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _locationLabel!,
+                  style: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
               TextFormField(
                 controller: _kota,
                 decoration: const InputDecoration(
@@ -635,65 +786,6 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
               const SizedBox(height: 6),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _JenisCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String sub;
-  final Color color;
-  final bool selected;
-  final VoidCallback onTap;
-  const _JenisCard({
-    required this.icon,
-    required this.label,
-    required this.sub,
-    required this.color,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? color.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.10),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: selected ? color : const Color(0xFF64748B), size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: TextStyle(
-                          color: selected ? color : const Color(0xFFE2E8F0),
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12.5)),
-                  Text(sub,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.42),
-                          fontSize: 10)),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -22,15 +22,17 @@ kini dengan **akun Supabase** & **laporan komunitas** (banjir / tutup jalan).
     **"BACA SELENGKAPNYA"** yang expand inline
   - `detail_screen.dart`, `onboarding_screen.dart`
   - `auth_screen.dart` — masuk/daftar (email + password, Supabase Auth)
-  - `community_screen.dart` — feed + tulis **laporan banjir & tutup jalan**
-- `supabase/schema.sql` — tabel `reports` + Row Level Security (idempotent)
+  - `community_screen.dart` — laporan multi-kategori, lokasi peta, dan komentar
+- `supabase/schema.sql` — tabel laporan/komentar + Row Level Security (idempotent)
 
 ## Fitur komunitas (baru)
 
 | Fitur | Detail |
 |---|---|
 | Akun | Daftar & masuk via email/password (Supabase Auth), tombol avatar di Beranda |
-| Laporan | Banjir & tutup jalan: jenis + kota (auto dari GPS) + deskripsi + titik lokasi |
+| Laporan | Banjir, jalan ditutup, listrik/air padam, macet, kebakaran; bisa pilih beberapa kategori sekaligus |
+| Lokasi laporan | Pilih titik kejadian langsung di peta; halaman detail laporan dapat membuka titik tersebut di peta |
+| Komentar | Pengguna yang masuk dapat memberi komentar pada detail laporan |
 | Bebas jumlah | Satu akun boleh mengirim laporan berulang kali; hanya laporan sendiri yang bisa dihapus |
 | Quote expand | Kartu kutipan edukasi membuka isi artikel inline ("BACA SELENGKAPNYA") |
 | Layout orientasi | Halaman detail artikel & detail polutan otomatis 2 kolom saat landscape |
@@ -52,7 +54,7 @@ flutter run \
 Setup backend sekali saja:
 
 1. Buat project gratis di supabase.com
-2. SQL Editor → jalankan isi `supabase/schema.sql` (tabel + RLS + realtime)
+2. SQL Editor → jalankan isi `supabase/schema.sql` (tabel + migrasi kolom kategori/lokasi + komentar + RLS + realtime). Jalankan kembali setelah memperbarui aplikasi agar skema Supabase ikut diperbarui.
 3. Authentication → Providers → **Email aktif**; matikan **Confirm email**
    agar daftar langsung masuk (untuk keperluan tugas/demo)
 

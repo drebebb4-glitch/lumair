@@ -6,8 +6,10 @@ import 'package:latlong2/latlong.dart';
 import '../../core/aqi_helper.dart';
 import '../../domain/models/air_quality.dart';
 import '../../domain/providers.dart';
+import '../../domain/report_provider.dart';
 import '../widgets/glass.dart';
 import 'detail_screen.dart';
+import 'report_detail_screen.dart';
 
 class _BaseMap {
   final String name;
@@ -59,7 +61,10 @@ const _legend = [
 /// Peta AQI by area — modern: HUD kaca mengambang, kontrol zoom,
 /// basemap pills, long-press cek AQI titik mana pun, jadikan beranda.
 class MapScreen extends ConsumerStatefulWidget {
-  const MapScreen({super.key});
+  const MapScreen({super.key, this.focusReport});
+
+  final ReportEntry? focusReport;
+
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
@@ -102,15 +107,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       setState(() => _probeName = name);
     } catch (_) {
       if (mounted) {
-        setState(() =>
-            _probeName = '${p.latitude.toStringAsFixed(3)}, ${p.longitude.toStringAsFixed(3)}');
+        setState(() => _probeName =
+            '${p.latitude.toStringAsFixed(3)}, ${p.longitude.toStringAsFixed(3)}');
       }
     }
   }
 
   void _clearProbe() => setState(() => _probe = null);
 
-  void _setHome({required String name, required double lat, required double lon}) {
+  void _setHome(
+      {required String name, required double lat, required double lon}) {
     ref
         .read(homeLocationProvider.notifier)
         .set(HomeOverride(name: name, lat: lat, lon: lon));
@@ -126,6 +132,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final aqi = ref.watch(aqiProvider);
     final favs = ref.watch(favoritesProvider);
     final cities = ref.watch(allCitiesProvider);
+    final reports = ref.watch(reportsProvider);
     final base = _styles[_style];
     return Scaffold(
       appBar: AppBar(
@@ -146,12 +153,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Gagal: $e')),
         data: (r) {
-          final center = LatLng(r.lat, r.lon);
+          final focus = widget.focusReport;
+          final center = focus?.hasCoordinates == true
+              ? LatLng(focus!.lat!, focus.lon!)
+              : LatLng(r.lat, r.lon);
+          final reportEntries = reports.maybeWhen(
+            data: (items) => [
+              for (final item in items)
+                if (item.hasCoordinates && item.id != focus?.id) item,
+              if (focus?.hasCoordinates == true) focus!,
+            ],
+            orElse: () =>
+                focus?.hasCoordinates == true ? [focus!] : <ReportEntry>[],
+          );
           final cityList = cities.maybeWhen(
             data: (list) => list
                 .where((c) =>
-                    (c.lat - r.lat).abs() > 0.3 ||
-                    (c.lon - r.lon).abs() > 0.3)
+                    (c.lat - r.lat).abs() > 0.3 || (c.lon - r.lon).abs() > 0.3)
                 .toList(),
             orElse: () => const <AirQualityReading>[],
           );
@@ -161,7 +179,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 mapController: _map,
                 options: MapOptions(
                   initialCenter: center,
-                  initialZoom: 5.5,
+                  initialZoom: focus?.hasCoordinates == true ? 15 : 5.5,
                   onLongPress: (_, p) => _startProbe(p),
                 ),
                 children: [
@@ -188,7 +206,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           point: LatLng(c.lat, c.lon),
                           radius: 45000,
                           useRadiusInMeter: true,
-                          color: AqiHelper.color(c.usAqi).withValues(alpha: 0.20),
+                          color:
+                              AqiHelper.color(c.usAqi).withValues(alpha: 0.20),
                           borderColor:
                               AqiHelper.color(c.usAqi).withValues(alpha: 0.55),
                           borderStrokeWidth: 1.5,
@@ -213,8 +232,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             onTap: () => _openFav(
                               context,
                               FavoritePlace(
-                                id:
-                                    'city-${c.lat.toStringAsFixed(2)}-${c.lon.toStringAsFixed(2)}',
+                                id: 'city-${c.lat.toStringAsFixed(2)}-${c.lon.toStringAsFixed(2)}',
                                 name: c.placeName,
                                 lat: c.lat,
                                 lon: c.lon,
@@ -237,6 +255,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                   color: Color(0xFF94A3B8), size: 34),
                             ),
                           )),
+                      for (final report in reportEntries)
+                        Marker(
+                          point: LatLng(report.lat!, report.lon!),
+                          width: 52,
+                          height: 58,
+                          child: GestureDetector(
+                            onTap: () => _openReport(context, report),
+                            child: _ReportPin(report: report),
+                          ),
+                        ),
                       if (_probe != null)
                         Marker(
                           point: _probe!,
@@ -269,6 +297,33 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   onToggle: () => setState(() => _legendOpen = !_legendOpen),
                 ),
               ),
+
+              if (reports.hasError)
+                Positioned(
+                  top: 58,
+                  left: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0B1220)
+                          .withValues(alpha: 0.92),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: const Color(0xFFF87171).withValues(alpha: 0.6)),
+                    ),
+                    child: Text(
+                      'Laporan tidak dapat dimuat: ${reports.error}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFFECACA),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ),
 
               // ── Kontrol kanan tengah: zoom ±, daftar ikon ──
               Positioned(
@@ -347,6 +402,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => DetailScreen(reading: r)),
+    );
+  }
+
+  void _openReport(BuildContext context, ReportEntry report) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReportDetailScreen(
+          entry: report,
+          onOpenMap: () => Navigator.of(context).pop(),
+        ),
+      ),
     );
   }
 
@@ -460,8 +526,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   if (q.isEmpty) return;
                   setSheet(() => searching = true);
                   try {
-                    final res =
-                        await ref.read(geocodingApiProvider).search(q);
+                    final res = await ref.read(geocodingApiProvider).search(q);
                     setSheet(() {
                       results = res;
                       searching = false;
@@ -510,8 +575,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     onTap: () async {
                       Navigator.pop(sheetCtx);
                       try {
-                        final r = await ref
-                            .read(placeAqiProvider(p).future);
+                        final r = await ref.read(placeAqiProvider(p).future);
                         if (!context.mounted) return;
                         Navigator.push(
                           context,
@@ -522,8 +586,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                         if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                              content: Text(
-                                  'Gagal memuat AQI kota (offline?)')),
+                              content:
+                                  Text('Gagal memuat AQI kota (offline?)')),
                         );
                       }
                     },
@@ -562,7 +626,8 @@ class _GlassStack extends StatelessWidget {
             : Colors.black.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-            color: (accent ?? Colors.white).withValues(alpha: accent != null ? 0.45 : 0.14)),
+            color: (accent ?? Colors.white)
+                .withValues(alpha: accent != null ? 0.45 : 0.14)),
       ),
       child: child,
     );
@@ -601,7 +666,8 @@ class _GlassPills extends StatelessWidget {
   final List<String> labels;
   final int active;
   final ValueChanged<int> onPick;
-  const _GlassPills({required this.labels, required this.active, required this.onPick});
+  const _GlassPills(
+      {required this.labels, required this.active, required this.onPick});
 
   @override
   Widget build(BuildContext context) {
@@ -622,7 +688,8 @@ class _GlassPills extends StatelessWidget {
               onTap: () => onPick(i),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: i == active
                       ? Colors.white.withValues(alpha: 0.15)
@@ -814,7 +881,8 @@ class _AqiBadge extends StatelessWidget {
             color: AqiHelper.color(aqi),
             borderRadius: BorderRadius.circular(small ? 10 : 14),
             boxShadow: const [
-              BoxShadow(blurRadius: 5, color: Colors.black26, offset: Offset(0, 2))
+              BoxShadow(
+                  blurRadius: 5, color: Colors.black26, offset: Offset(0, 2))
             ],
           ),
           child: Text('AQI $aqi',
@@ -823,7 +891,8 @@ class _AqiBadge extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   fontSize: small ? 11 : 13)),
         ),
-        Icon(Icons.location_on, color: AqiHelper.color(aqi), size: small ? 20 : 28),
+        Icon(Icons.location_on,
+            color: AqiHelper.color(aqi), size: small ? 20 : 28),
       ],
     );
   }
@@ -902,12 +971,11 @@ class _CurrentHud extends StatelessWidget {
                   icon: const Icon(Icons.push_pin_outlined, size: 16),
                   label: const Text('Jadikan Beranda',
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          TextStyle(color: Color(0xFFE2E8F0), fontSize: 12)),
+                      style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 12)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    side: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.2)),
+                    side:
+                        BorderSide(color: Colors.white.withValues(alpha: 0.2)),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
@@ -1026,8 +1094,7 @@ class _ProbeHud extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(999),
                 child: const Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.close,
-                      size: 18, color: Color(0xFF94A3B8)),
+                  child: Icon(Icons.close, size: 18, color: Color(0xFF94A3B8)),
                 ),
               ),
             ],
@@ -1087,6 +1154,61 @@ class _ProbeHud extends ConsumerWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _ReportPin extends StatelessWidget {
+  const _ReportPin({required this.report});
+
+  final ReportEntry report;
+
+  @override
+  Widget build(BuildContext context) {
+    final category = report.kategori.first;
+    final color = switch (category) {
+      ReportCategory.banjir => const Color(0xFF38BDF8),
+      ReportCategory.tutupJalan => const Color(0xFFFBBF24),
+      ReportCategory.listrikPadam => const Color(0xFFFACC15),
+      ReportCategory.airPadam => const Color(0xFF2DD4BF),
+      ReportCategory.macet => const Color(0xFFFB923C),
+      ReportCategory.kebakaran => const Color(0xFFFB7185),
+      _ => const Color(0xFF34D399),
+    };
+    final icon = switch (category) {
+      ReportCategory.banjir => Icons.water_outlined,
+      ReportCategory.tutupJalan => Icons.construction_outlined,
+      ReportCategory.listrikPadam => Icons.bolt_outlined,
+      ReportCategory.airPadam => Icons.water_drop_outlined,
+      ReportCategory.macet => Icons.traffic_outlined,
+      ReportCategory.kebakaran => Icons.local_fire_department_outlined,
+      _ => Icons.report_outlined,
+    };
+
+    return Column(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.45),
+                blurRadius: 10,
+              ),
+            ],
+          ),
+          child: Icon(icon, size: 19, color: const Color(0xFF07111F)),
+        ),
+        Container(
+          width: 2,
+          height: 12,
+          color: color,
+        ),
+      ],
     );
   }
 }
