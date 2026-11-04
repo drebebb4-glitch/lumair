@@ -1000,8 +1000,8 @@ class _SearchRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
           ),
-          child: Row(
-            children: const [
+          child: const Row(
+            children: [
               Icon(Icons.explore_outlined, color: Color(0xFF34D399), size: 20),
               SizedBox(width: 10),
               Expanded(
@@ -1009,7 +1009,7 @@ class _SearchRow extends StatelessWidget {
                     style: TextStyle(
                         color: Color(0xFFCBD5E1), fontSize: 13)),
               ),
-              const Icon(Icons.chevron_right,
+              Icon(Icons.chevron_right,
                   size: 18, color: Color(0xFF64748B)),
             ],
           ),
