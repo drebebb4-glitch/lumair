@@ -35,7 +35,11 @@ class CommunityScreen extends ConsumerWidget {
         }),
       );
     }
-    return const _ReportBody();
+    return const _ScreenFrame(
+      title: 'Laporan Komunitas',
+      subtitle: 'Lapor banjir & jalan ditutup agar tetangga tahu dulu lancar',
+      child: _ReportBody(),
+    );
   }
 }
 
@@ -214,7 +218,7 @@ class _ReportBody extends ConsumerWidget {
                     ],
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
                     itemCount: list.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (ctx, i) {

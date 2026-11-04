@@ -78,6 +78,19 @@
 
     _flutter.loader.load({
       onEntrypointLoaded: async function (engineInitializer) {
+        // Bersihkan service worker & cache versi app lama supaya refresh
+        // pertama setelah deploy tidak memadukan aset lama + baru
+        // (penyebab splash "jelek": blob & teks setengah tergambar).
+        try {
+          if (navigator.serviceWorker) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            regs.forEach(function (r) { r.unregister(); });
+          }
+          if (window.caches && caches.keys) {
+            const keys = await caches.keys();
+            keys.forEach(function (k) { caches.delete(k); });
+          }
+        } catch (_) { /* aman kalau gagal */ }
         const appRunner = await engineInitializer.initializeEngine();
         // runApp() selesai tepat saat frame pertama Flutter sudah digambar —
         // splash HTML baru dilepas di sini supaya transisinya mulus.
