@@ -32,7 +32,7 @@ kini dengan **akun Supabase** & **laporan komunitas** (banjir / tutup jalan).
 | Akun | Daftar & masuk via email/password (Supabase Auth), tombol avatar di Beranda |
 | Laporan | Banjir, jalan ditutup, listrik/air padam, macet, kebakaran; bisa pilih beberapa kategori sekaligus |
 | Lokasi laporan | Pilih titik kejadian langsung di peta; halaman detail laporan dapat membuka titik tersebut di peta |
-| Komentar | Pengguna yang masuk dapat memberi komentar pada detail laporan |
+| Komentar | Komentar contoh lokal untuk beberapa kategori, disimpan di `assets/dummy/report_comments.json` |
 | Bebas jumlah | Satu akun boleh mengirim laporan berulang kali; hanya laporan sendiri yang bisa dihapus |
 | Quote expand | Kartu kutipan edukasi membuka isi artikel inline ("BACA SELENGKAPNYA") |
 | Layout orientasi | Halaman detail artikel & detail polutan otomatis 2 kolom saat landscape |
@@ -54,9 +54,14 @@ flutter run \
 Setup backend sekali saja:
 
 1. Buat project gratis di supabase.com
-2. SQL Editor → jalankan isi `supabase/schema.sql` (tabel + migrasi kolom kategori/lokasi + komentar + RLS + realtime). Jalankan kembali setelah memperbarui aplikasi agar skema Supabase ikut diperbarui.
+2. SQL Editor → jalankan isi `supabase/schema.sql` (tabel laporan + migrasi kolom kategori/lokasi + RLS). Jalankan kembali setelah memperbarui aplikasi agar skema Supabase ikut diperbarui.
 3. Authentication → Providers → **Email aktif**; matikan **Confirm email**
    agar daftar langsung masuk (untuk keperluan tugas/demo)
+
+Komentar tidak menggunakan backend. Untuk mengubah contoh komentar yang tampil,
+edit `assets/dummy/report_comments.json`, lalu commit dan push perubahan ke GitHub.
+Komentar tersebut hanya contoh statis dan tidak dapat ditambahkan dari aplikasi
+atau disinkronkan secara real-time.
 
 Build APK:
 

@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/services/supabase_service.dart';
@@ -131,17 +134,36 @@ final reportsProvider =
 });
 
 final reportCommentsProvider = FutureProvider.autoDispose
-    .family<List<ReportComment>, String>((ref, reportId) async {
-  if (!SupabaseService.isConfigured) return const [];
-  final raw = await SupabaseService.client
-      .from('report_comments')
-      .select()
-      .eq('report_id', reportId)
-      .order('created_at');
-  return (raw as List)
-      .map((item) => ReportComment.fromJson(item as Map<String, dynamic>))
-      .toList();
+    .family<List<ReportComment>, ReportEntry>((ref, entry) async {
+  final json = await rootBundle.loadString('assets/dummy/report_comments.json');
+  final samples = jsonDecode(json) as Map<String, dynamic>;
+  return localCommentsForReport(entry, samples);
 });
+
+List<ReportComment> localCommentsForReport(
+  ReportEntry entry,
+  Map<String, dynamic> samples,
+) {
+  final comments = <ReportComment>[];
+  for (final category in entry.kategori) {
+    final categorySamples = samples[category];
+    if (categorySamples is! List) continue;
+    for (final sample in categorySamples) {
+      if (sample is! Map) continue;
+      final item = Map<String, dynamic>.from(sample);
+      comments.add(
+        ReportComment.fromJson({
+          ...item,
+          'id': '${entry.id}-${item['id']}',
+          'report_id': entry.id,
+          'user_id': 'local-demo',
+        }),
+      );
+    }
+  }
+  comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+  return comments;
+}
 
 class ReportOutcome {
   final bool success;
@@ -211,50 +233,6 @@ class ReportsController {
     }
   }
 
-  Future<ReportOutcome> comment({
-    required String reportId,
-    required String isi,
-  }) async {
-    final user = ref.read(authUserProvider);
-    if (user == null) {
-      return const ReportOutcome(
-        success: false,
-        message: 'Masuk dulu untuk memberi komentar.',
-      );
-    }
-    if (isi.trim().isEmpty) {
-      return const ReportOutcome(
-        success: false,
-        message: 'Komentar tidak boleh kosong.',
-      );
-    }
-    if (!SupabaseService.isConfigured) {
-      return const ReportOutcome(
-        success: false,
-        message: 'Backend komentar belum terhubung.',
-      );
-    }
-    try {
-      await SupabaseService.client.from('report_comments').insert({
-        'report_id': reportId,
-        'user_id': user.id,
-        'penulis': user.displayName,
-        'isi': isi.trim(),
-      });
-      ref.invalidate(reportCommentsProvider(reportId));
-      return const ReportOutcome(
-        success: true,
-        message: 'Komentar terkirim.',
-      );
-    } catch (_) {
-      return const ReportOutcome(
-        success: false,
-        message:
-            'Gagal mengirim komentar — periksa koneksi atau skema Supabase.',
-      );
-    }
-  }
-
   Future<bool> delete(String id) async {
     final user = ref.read(authUserProvider);
     if (user == null || !SupabaseService.isConfigured) return false;
@@ -270,7 +248,6 @@ class ReportsController {
       return false;
     }
   }
-
 }
 
 final reportsControllerProvider = Provider<ReportsController>((ref) {

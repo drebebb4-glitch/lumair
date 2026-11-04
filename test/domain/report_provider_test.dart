@@ -42,4 +42,40 @@ void main() {
       expect(report.lon, 107.6070);
     });
   });
+
+  test('local report comments only include examples for matching categories',
+      () {
+    final report = ReportEntry.fromJson({
+      'id': 'report-1',
+      'user_id': 'user-1',
+      'jenis': ReportCategory.banjir,
+      'kategori': [ReportCategory.banjir, ReportCategory.macet],
+      'kota': 'Jakarta',
+      'deskripsi': 'Genangan di jalan',
+      'created_at': '2026-11-04T10:00:00Z',
+    });
+
+    final comments = localCommentsForReport(report, {
+      ReportCategory.banjir: [
+        {
+          'id': 'banjir-1',
+          'penulis': 'Rani',
+          'isi': 'Hati-hati saat melintas.',
+          'created_at': '2026-11-04T08:15:00Z',
+        },
+      ],
+      ReportCategory.listrikPadam: [
+        {
+          'id': 'listrik-1',
+          'penulis': 'Ayu',
+          'isi': 'Di sini juga padam.',
+          'created_at': '2026-11-04T09:05:00Z',
+        },
+      ],
+    });
+
+    expect(comments, hasLength(1));
+    expect(comments.single.reportId, report.id);
+    expect(comments.single.penulis, 'Rani');
+  });
 }
