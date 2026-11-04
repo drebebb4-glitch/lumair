@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/aqi_helper.dart';
 import '../../data/api/articles_api.dart';
 import '../../domain/providers.dart';
+import '../../domain/models/air_quality.dart';
 import '../widgets/glass.dart';
 import '../widgets/activity_card.dart';
 
@@ -103,7 +104,7 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
             const Expanded(
               child: ScreenTitle(
                 title: 'Edukasi Udara',
-                purpose: 'Kenapa udara kotor bahaya & cara ngelindungin diri',
+                purpose: 'Kenapa udara kotor bahaya & cara melindungi diri',
               ),
             ),
           ],
@@ -113,81 +114,20 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
         color: Colors.white,
         backgroundColor: const Color(0xFF0B1220),
         onRefresh: () => ref.read(articlesProvider.notifier).load(),
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          children: [
-            // ── Kartu live: konteks AQI user saat ini ──
-            aqi.maybeWhen(
-              data: (r) {
-                final c = AqiHelper.color(r.usAqi);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: GlassCard(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        c.withValues(alpha: 0.16),
-                        Colors.white.withValues(alpha: 0.05),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('UDARA LU SEKARANG',
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.4)),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Text('${r.usAqi}',
-                                style: TextStyle(
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.w800,
-                                    color: c,
-                                    height: 1.0)),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                  '${AqiHelper.category(r.usAqi)} • ${r.placeName}',
-                                  style: const TextStyle(
-                                      color: Color(0xFFE2E8F0),
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w600)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        ActivityCard(aqi: r.usAqi),
-                        const SizedBox(height: 6),
-                        Text(
-                            'Penjelasan lengkap skala & batas aman ada di artikel bawah.',
-                            style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.45),
-                                fontSize: 11.5)),
-                      ],
-                    ),
-                  ),
-                );
-              },
-              orElse: () => const SizedBox.shrink(),
-            ),
-
-            // ── Status sumber artikel ──
-            _ArticlesStatus(
+        child: LayoutBuilder(
+          builder: (context, c) {
+            final reading =
+                aqi.maybeWhen(data: (r) => r, orElse: () => null);
+            final live = reading == null
+                ? const SizedBox.shrink()
+                : _LivePanel(reading: reading);
+            final status = _ArticlesStatus(
               result: articles.maybeWhen(data: (a) => a, orElse: () => null),
               loading: articles.isLoading,
               rel: _rel,
               stamp: _stamp,
-            ),
-            const SizedBox(height: 8),
-
-            // ── Daftar artikel ──
-            articles.when(
+            );
+            final feed = articles.when(
               loading: () => const Center(
                 child: Padding(
                   padding: EdgeInsets.all(40),
@@ -214,8 +154,55 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
                 ),
               ),
               data: (result) => _VariedFeed(result: result),
-            ),
-          ],
+            );
+
+            // Lanskap: dua panel — kiri kondisi udara, kanan konten.
+            if (c.maxWidth > 640) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          live,
+                          const SizedBox(height: 8),
+                          _SearchRow(articles: articles),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const VerticalDivider(width: 1, color: Color(0x14FFFFFF)),
+                  Expanded(
+                    flex: 7,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      children: [status, const SizedBox(height: 8), feed],
+                    ),
+                  ),
+                ],
+              );
+            }
+
+            // Potret: satu kolom penuh.
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
+                live,
+                const SizedBox(height: 8),
+                _SearchRow(articles: articles),
+                const SizedBox(height: 8),
+                status,
+                const SizedBox(height: 8),
+                feed,
+              ],
+            );
+          },
         ),
       ),
     );
@@ -817,9 +804,7 @@ class _WideCard extends StatelessWidget {
 
 class _ArticleDetail extends StatelessWidget {
   final Article article;
-  const _ArticleDetail({required this.article});
-
-  @override
+  const _ArticleDetail({required this.article});  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(article.kicker)),
@@ -925,4 +910,218 @@ class _ArticleDetail extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: _contentParts(),
       );
+}
+
+/// Kartu kondisi udara saat ini — ikut mockup edukasi.
+class _LivePanel extends StatelessWidget {
+  final AirQualityReading reading;
+  const _LivePanel({required this.reading});
+
+  @override
+  Widget build(BuildContext context) {
+    final r = reading;
+    final c = AqiHelper.color(r.usAqi);
+    return GlassCard(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          c.withValues(alpha: 0.16),
+          Colors.white.withValues(alpha: 0.05),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('UDARA LU SEKARANG',
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4)),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Text('${r.usAqi}',
+                  style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      color: c,
+                      height: 1.0)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('${AqiHelper.category(r.usAqi)} • ${r.placeName}',
+                    style: const TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ActivityCard(aqi: r.usAqi),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.info_outline,
+                  size: 14, color: Colors.white.withValues(alpha: 0.45)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                    'Pengguna lengkap skala & batas aman ada di artikel bawah',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        fontSize: 11.5)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Baris "Cari informasi, tips, dan panduan lainnya" — buka pencarian artikel.
+class _SearchRow extends StatelessWidget {
+  final AsyncValue<ArticlesResult> articles;
+  const _SearchRow({required this.articles});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.05),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () => _openSearch(context),
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+          ),
+          child: Row(
+            children: const [
+              Icon(Icons.explore_outlined, color: Color(0xFF34D399), size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text('Cari informasi, tips, dan panduan lainnya',
+                    style: TextStyle(
+                        color: Color(0xFFCBD5E1), fontSize: 13)),
+              ),
+              const Icon(Icons.chevron_right,
+                  size: 18, color: Color(0xFF64748B)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openSearch(BuildContext context) {
+    final arts = articles.maybeWhen(
+        data: (a) => a.articles, orElse: () => const <Article>[]);
+    showDialog(
+      context: context,
+      builder: (_) => _ArticleSearchDialog(articles: arts),
+    );
+  }
+}
+
+/// Dialog pencarian judul artikel — hasil ketuk → halaman detail.
+class _ArticleSearchDialog extends StatefulWidget {
+  final List<Article> articles;
+  const _ArticleSearchDialog({required this.articles});
+
+  @override
+  State<_ArticleSearchDialog> createState() => _ArticleSearchDialogState();
+}
+
+class _ArticleSearchDialogState extends State<_ArticleSearchDialog> {
+  String _q = '';
+
+  List<Article> get _hits {
+    final q = _q.toLowerCase().trim();
+    if (q.isEmpty) return widget.articles;
+    return widget.articles
+        .where((a) =>
+            a.title.toLowerCase().contains(q) ||
+            a.kicker.toLowerCase().contains(q) ||
+            a.teaser.toLowerCase().contains(q))
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFF0B1220),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 560),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Cari di Edukasi',
+                  style: TextStyle(
+                      color: Color(0xFFE2E8F0),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16)),
+              const SizedBox(height: 12),
+              TextField(
+                autofocus: true,
+                onChanged: (v) => setState(() => _q = v),
+                decoration: const InputDecoration(
+                  hintText: 'mis. PM2.5, masker, AQI…',
+                  prefixIcon: Icon(Icons.search, size: 20),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Flexible(
+                child: _hits.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Tidak ada artikel yang cocok',
+                            style: TextStyle(color: Color(0xFF64748B))),
+                      )
+                    : ListView(
+                        shrinkWrap: true,
+                        children: [
+                          for (final a in _hits)
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                              leading: const Icon(Icons.article_outlined,
+                                  size: 18, color: Color(0xFF34D399)),
+                              title: Text(a.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                      color: Color(0xFFE2E8F0),
+                                      fontSize: 13.5)),
+                              subtitle: Text(a.kicker,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      color: Colors.white
+                                          .withValues(alpha: 0.45),
+                                      fontSize: 11)),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                _openArticle(context, a);
+                              },
+                            ),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

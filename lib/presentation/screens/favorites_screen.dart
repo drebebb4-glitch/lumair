@@ -7,8 +7,10 @@ import '../../domain/providers.dart';
 import '../widgets/glass.dart';
 import 'detail_screen.dart';
 
-/// Favorit 2.0 — struktur jelas: kota tersimpan dulu, lalu cari,
-/// lalu jelajah 20 kota (collapsible). Gak campur aduk lagi.
+/// Favorit 2.1 — ikut mockup:
+/// • Potret: satu kolom — Kota tersimpan → Cari kota → Jelajah.
+/// • Lanskap (>620dp): dua panel — kiri tersimpan, kanan cari+jelajah.
+/// • Tile favorit: badge AQI persegi membulat + papan kaca + hapus.
 class FavoritesScreen extends ConsumerStatefulWidget {
   const FavoritesScreen({super.key});
   @override
@@ -62,9 +64,6 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final favs = ref.watch(favoritesProvider);
-    final notifier = ref.read(favoritesProvider.notifier);
-    final cities = ref.watch(allCitiesProvider);
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
@@ -86,183 +85,202 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
           ],
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        children: [
-          // ── 1. Kota tersimpan ──
-          _sectionTitle('Kota tersimpan', '(${favs.length}/${AppConstants.maxFavorites})'),
-          const SizedBox(height: 6),
-          if (favs.isEmpty)
-            GlassCard(
-              child: Column(
-                children: [
-                  Icon(Icons.favorite_border,
-                      size: 40, color: Colors.white.withValues(alpha: 0.35)),
-                  const SizedBox(height: 10),
-                  const Text('Belum ada kota tersimpan',
-                      style: TextStyle(
-                          color: Color(0xFFE2E8F0),
-                          fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 4),
-                  Text(
-                      'Ketuk + pada hasil pencarian di bawah, atau pin di Peta.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 12.5)),
-                ],
-              ),
+      body: LayoutBuilder(
+        builder: (context, c) {
+          if (c.maxWidth > 620) return const _LandscapeBody();
+          return const _PortraitBody();
+        },
+      ),
+    );
+  }
+
+  // ── Bagian-bagian isi (dipakai bersama potret & lanskap) ──
+
+  Widget _savedSection(WidgetRef ref) {
+    final favs = ref.watch(favoritesProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _sectionTitle(
+            'Kota tersimpan', '(${favs.length}/${AppConstants.maxFavorites})'),
+        const SizedBox(height: 10),
+        if (favs.isEmpty)
+          GlassCard(
+            child: Column(
+              children: [
+                Icon(Icons.favorite_border,
+                    size: 40, color: Colors.white.withValues(alpha: 0.35)),
+                const SizedBox(height: 10),
+                const Text('Belum ada kota tersimpan',
+                    style: TextStyle(
+                        color: Color(0xFFE2E8F0), fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text('Cari kota di bawah, atau pin di Peta.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontSize: 12.5)),
+              ],
             ),
-          ...favs.map((p) => _FavTile(place: p)),
+          )
+        else
+          ...favs.map((p) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _FavTile(place: p),
+              )),
+      ],
+    );
+  }
 
-          const SizedBox(height: 18),
-
-          // ── 2. Cari kota ──
-          _sectionTitle('Cari kota', 'ketik nama kota lalu enter'),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _ctrl,
-                  textInputAction: TextInputAction.search,
-                  decoration: const InputDecoration(
-                    hintText: 'mis. Bandung, Surabaya…',
-                    prefixIcon: Icon(Icons.search),
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  ),
-                  onSubmitted: (_) => _search(),
+  Widget _searchSection(
+      BuildContext context, WidgetRef ref, FavoritesNotifier notifier) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _sectionTitle('Cari kota', 'ketik nama Kota lalu enter'),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _ctrl,
+                textInputAction: TextInputAction.search,
+                decoration: const InputDecoration(
+                  hintText: 'mis. Bandung, Surabaya…',
+                  prefixIcon: Icon(Icons.search),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
+                onSubmitted: (_) => _search(),
               ),
-              const SizedBox(width: 8),
-              IconButton.filled(
-                onPressed: _searching ? null : _search,
-                icon: _searching
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child:
-                            CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.search),
-              ),
-            ],
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(_error!,
-                  style: const TextStyle(color: Color(0xFFF87171), fontSize: 12.5)),
             ),
-          ..._results.map((p) {
-            final saved = notifier.contains(p.id);
-            return Card(
-              child: ListTile(
-                leading: const Icon(Icons.location_city_outlined),
-                title: Text(p.name),
-                subtitle: Text(
-                    '${p.lat.toStringAsFixed(2)}, ${p.lon.toStringAsFixed(2)}'),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              onPressed: _searching ? null : _search,
+              icon: _searching
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.search),
+            ),
+          ],
+        ),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(_error!,
+                style:
+                    const TextStyle(color: Color(0xFFF87171), fontSize: 12.5)),
+          ),
+        const SizedBox(height: 8),
+        ..._results.map((p) {
+          final saved = notifier.contains(p.id);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _CityRowCard(
+              leading: const _CityBadge(icon: Icons.location_city_outlined),
+              title: p.name,
+              subtitle:
+                  '${p.lat.toStringAsFixed(2)}, ${p.lon.toStringAsFixed(2)}',
+              trailing: saved
+                  ? const Icon(Icons.check, color: Color(0xFF34D399))
+                  : IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: () => _addOrNotice(context, p, notifier, ref),
+                    ),
+              onTap: saved ? () => _openFavDetail(context, ref, p) : null,
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _exploreSection(BuildContext context, WidgetRef ref) {
+    final cities = ref.watch(allCitiesProvider);
+    final favs = ref.watch(favoritesProvider);
+    final notifier = ref.read(favoritesProvider.notifier);
+    return ExpansionTile(
+      collapsedShape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: Colors.white.withValues(alpha: 0.05),
+      collapsedBackgroundColor: Colors.white.withValues(alpha: 0.05),
+      childrenPadding: const EdgeInsets.only(bottom: 8),
+      leading: const Icon(Icons.public_outlined),
+      title: const Text('Jelajah 20 kota besar',
+          style: TextStyle(
+              color: Color(0xFFE2E8F0),
+              fontWeight: FontWeight.w700,
+              fontSize: 15)),
+      subtitle: Text('Indonesia — AQI live semua kota',
+          style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.45), fontSize: 12)),
+      children: [
+        cities.when(
+          loading: () => const ListTile(
+            leading: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2)),
+            title: Text('Memuat 20 kota…'),
+          ),
+          error: (e, _) => ListTile(
+            leading: const Icon(Icons.cloud_off_outlined),
+            title: const Text('Gagal memuat (offline)'),
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => ref.invalidate(allCitiesProvider),
+            ),
+          ),
+          data: (list) => Column(
+            children: list.map((r) {
+              final c = AqiHelper.color(r.usAqi);
+              final saved = favs.any((p) =>
+                  p.name == r.placeName &&
+                  (p.lat - r.lat).abs() < 0.01 &&
+                  (p.lon - r.lon).abs() < 0.01);
+              final place = FavoritePlace(
+                id: 'city-${r.lat.toStringAsFixed(2)}-${r.lon.toStringAsFixed(2)}',
+                name: r.placeName,
+                lat: r.lat,
+                lon: r.lon,
+                lastAqi: r.usAqi,
+              );
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: c.withValues(alpha: 0.15),
+                  child: Text('${r.usAqi}',
+                      style: TextStyle(
+                          color: c,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12)),
+                ),
+                title: Text(r.placeName,
+                    style: const TextStyle(
+                        color: Color(0xFFE2E8F0), fontSize: 14)),
+                subtitle: Text(AqiHelper.category(r.usAqi),
+                    style: TextStyle(color: c, fontSize: 12)),
                 trailing: saved
                     ? const Icon(Icons.check, color: Color(0xFF34D399))
                     : IconButton(
                         icon: const Icon(Icons.add),
                         onPressed: () =>
-                            _addOrNotice(context, p, notifier, ref),
+                            _addOrNotice(context, place, notifier, ref),
                       ),
-                onTap: saved
-                    ? () => _openFavDetail(context, ref, p)
-                    : null,
-              ),
-            );
-          }),
-
-          const SizedBox(height: 18),
-
-          // ── 3. Jelajah 20 kota besar (collapsible) ──
-          ExpansionTile(
-            collapsedShape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            backgroundColor: Colors.white.withValues(alpha: 0.05),
-            collapsedBackgroundColor: Colors.white.withValues(alpha: 0.05),
-            childrenPadding: const EdgeInsets.only(bottom: 8),
-            leading: const Icon(Icons.public_outlined),
-            title: const Text('Jelajah 20 kota besar',
-                style: TextStyle(
-                    color: Color(0xFFE2E8F0),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15)),
-            subtitle: Text('Indonesia — AQI live semua kota',
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.45),
-                    fontSize: 12)),
-            children: [
-              cities.when(
-                loading: () => const ListTile(
-                  leading: SizedBox(
-                      width: 18,
-                      height: 18,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2)),
-                  title: Text('Memuat 20 kota…'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => DetailScreen(reading: r)),
                 ),
-                error: (e, _) => ListTile(
-                  leading: const Icon(Icons.cloud_off_outlined),
-                  title: const Text('Gagal memuat (offline)'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: () => ref.invalidate(allCitiesProvider),
-                  ),
-                ),
-                data: (list) => Column(
-                  children: list.map((r) {
-                    final c = AqiHelper.color(r.usAqi);
-                    final saved = favs.any((p) =>
-                        p.name == r.placeName &&
-                        (p.lat - r.lat).abs() < 0.01 &&
-                        (p.lon - r.lon).abs() < 0.01);
-                    final place = FavoritePlace(
-                      id: 'city-${r.lat.toStringAsFixed(2)}-${r.lon.toStringAsFixed(2)}',
-                      name: r.placeName,
-                      lat: r.lat,
-                      lon: r.lon,
-                      lastAqi: r.usAqi,
-                    );
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: c.withValues(alpha: 0.15),
-                        child: Text('${r.usAqi}',
-                            style: TextStyle(
-                                color: c,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12)),
-                      ),
-                      title: Text(r.placeName,
-                          style: const TextStyle(
-                              color: Color(0xFFE2E8F0), fontSize: 14)),
-                      subtitle: Text(AqiHelper.category(r.usAqi),
-                          style: TextStyle(color: c, fontSize: 12)),
-                      trailing: saved
-                          ? const Icon(Icons.check, color: Color(0xFF34D399))
-                          : IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: () =>
-                                  _addOrNotice(context, place, notifier, ref),
-                            ),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => DetailScreen(reading: r)),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
+              );
+            }).toList(),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -276,6 +294,66 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     );
   }
 }
+
+/// ── Potret: satu kolom discroll utuh ──
+class _PortraitBody extends ConsumerWidget {
+  const _PortraitBody();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = _of(context);
+    final notifier = ref.read(favoritesProvider.notifier);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        state._savedSection(ref),
+        const SizedBox(height: 18),
+        state._searchSection(context, ref, notifier),
+        const SizedBox(height: 18),
+        state._exploreSection(context, ref),
+      ],
+    );
+  }
+}
+
+/// ── Lanskap: dua panel sejajar (tersimpan | cari & jelajah) ──
+class _LandscapeBody extends ConsumerWidget {
+  const _LandscapeBody();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = _of(context);
+    final notifier = ref.read(favoritesProvider.notifier);
+    return Row(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 10, 24),
+            child: state._savedSection(ref),
+          ),
+        ),
+        const VerticalDivider(width: 1, color: Color(0x14FFFFFF)),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(10, 16, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                state._searchSection(context, ref, notifier),
+                const SizedBox(height: 16),
+                state._exploreSection(context, ref),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Sisi-sisi form (controller & hasil pencarian) milik State asli.
+_FavoritesScreenState _of(BuildContext context) =>
+    context.findAncestorStateOfType<_FavoritesScreenState>()!;
 
 Widget _sectionTitle(String title, String hint) => Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -294,6 +372,116 @@ Widget _sectionTitle(String title, String hint) => Row(
       ],
     );
 
+/// Badge AQI persegi membulat — ikut mockup favorit.
+class _AqiBadge extends StatelessWidget {
+  final int aqi;
+  final Color color;
+  const _AqiBadge({required this.aqi, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text('$aqi',
+          style: TextStyle(
+              color: color, fontWeight: FontWeight.w800, fontSize: 14)),
+    );
+  }
+}
+
+class _CityBadge extends StatelessWidget {
+  final IconData icon;
+  const _CityBadge({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Icon(icon, color: Colors.white.withValues(alpha: 0.55), size: 20),
+    );
+  }
+}
+
+/// Kartu baris kaca seragam (tile favorit & hasil cari).
+class _CityRowCard extends StatelessWidget {
+  final Widget leading;
+  final String title;
+  final String subtitle;
+  final Color? subtitleColor;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  const _CityRowCard({
+    required this.leading,
+    required this.title,
+    required this.subtitle,
+    this.subtitleColor,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+          ),
+          child: Row(
+            children: [
+              leading,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Color(0xFFE2E8F0),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14)),
+                    const SizedBox(height: 2),
+                    Text(subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: subtitleColor ??
+                                Colors.white.withValues(alpha: 0.5),
+                            fontSize: 12)),
+                  ],
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _FavTile extends ConsumerWidget {
   final FavoritePlace place;
   const _FavTile({required this.place});
@@ -301,58 +489,46 @@ class _FavTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final live = ref.watch(placeAqiProvider(place));
-    return Card(
-      child: live.when(
-        loading: () => ListTile(
-          title: Text(place.name,
-              style: const TextStyle(color: Color(0xFFE2E8F0))),
-          subtitle: Text('Memuat AQI…',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.4))),
-          trailing: const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2)),
+    return live.when(
+      loading: () => _CityRowCard(
+        leading: const _CityBadge(icon: Icons.favorite_border),
+        title: place.name,
+        subtitle: 'Memuat AQI…',
+        trailing: const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      error: (e, _) => _CityRowCard(
+        leading: const _CityBadge(icon: Icons.cloud_off_outlined),
+        title: place.name,
+        subtitle: 'Gagal memuat',
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: () =>
+              ref.read(favoritesProvider.notifier).remove(place.id),
         ),
-        error: (e, _) => ListTile(
-          title: Text(place.name,
-              style: const TextStyle(color: Color(0xFFE2E8F0))),
-          subtitle: const Text('Gagal memuat',
-              style: TextStyle(color: Color(0xFF94A3B8))),
+      ),
+      data: (r) {
+        final c = AqiHelper.color(r.usAqi);
+        return _CityRowCard(
+          leading: _AqiBadge(aqi: r.usAqi, color: c),
+          title: place.name,
+          subtitle:
+              '${AqiHelper.category(r.usAqi)}${r.fromCache ? ' • offline' : ''}',
+          subtitleColor: c,
           trailing: IconButton(
-            icon: const Icon(Icons.delete_outline),
+            icon: const Icon(Icons.delete_outline,
+                color: Color(0xFF94A3B8), size: 20),
             onPressed: () =>
                 ref.read(favoritesProvider.notifier).remove(place.id),
           ),
-        ),
-        data: (r) {
-          final c = AqiHelper.color(r.usAqi);
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: c.withValues(alpha: 0.15),
-              child: Text('${r.usAqi}',
-                  style: TextStyle(
-                      color: c, fontWeight: FontWeight.bold, fontSize: 13)),
-            ),
-            title: Text(place.name,
-                style: const TextStyle(
-                    color: Color(0xFFE2E8F0),
-                    fontWeight: FontWeight.w600)),
-            subtitle: Text(
-                '${AqiHelper.category(r.usAqi)}${r.fromCache ? ' • offline' : ''}',
-                style: TextStyle(color: c, fontSize: 12)),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () =>
-                  ref.read(favoritesProvider.notifier).remove(place.id),
-            ),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => DetailScreen(reading: r)),
-            ),
-          );
-        },
-      ),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => DetailScreen(reading: r)),
+          ),
+        );
+      },
     );
   }
 }
