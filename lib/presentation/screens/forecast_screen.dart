@@ -22,22 +22,9 @@ class ForecastScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        title: Row(
-          children: [
-            Image.asset('assets/logo-mark.png',
-                width: 32,
-                height: 32,
-                fit: BoxFit.contain,
-                semanticLabel: 'Logo LUMAIR',
-                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: ScreenTitle(
-                title: 'Prakiraan Udara',
-                purpose: 'Jawabannya: udara bakal makin buruk atau enggak?',
-              ),
-            ),
-          ],
+        title: const ScreenTitle(
+          title: 'Prakiraan Udara',
+          purpose: 'Jawabannya: udara bakal makin buruk atau enggak?',
         ),
       ),
       body: forecast.when(
@@ -427,7 +414,7 @@ class _LineChart24 extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 26,
+              reservedSize: 28,
               interval: step.toDouble(),
               getTitlesWidget: (v, meta) {
                 final i = v.toInt();

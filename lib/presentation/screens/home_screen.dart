@@ -4,13 +4,11 @@ import '../../core/aqi_helper.dart';
 import '../../core/cities.dart';
 import '../../domain/models/air_quality.dart';
 import '../../domain/providers.dart';
-import '../../domain/auth_provider.dart';
 import '../widgets/aurora_background.dart';
 import '../widgets/glass.dart';
 import '../widgets/aqi_gauge.dart';
 import '../widgets/scale_strip.dart';
 import '../widgets/activity_card.dart';
-import 'auth_screen.dart';
 import 'detail_screen.dart';
 import 'forecast_screen.dart';
 import 'favorites_screen.dart';
@@ -65,9 +63,6 @@ class HomeScreen extends ConsumerWidget {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                     children: [
-                     _HomeHeader(fromCache: r.fromCache),
-                     const SizedBox(height: 14),
-
                     // ── Banner status lokasi/internet ──
                     if (gpsFallback)
                       const _StatusBanner(
@@ -161,39 +156,54 @@ class HomeScreen extends ConsumerWidget {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
                                   vertical: 4, horizontal: 8),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.location_on_outlined,
-                                      size: 16,
-                                      color:
-                                          Colors.white.withValues(alpha: 0.8)),
-                                  const SizedBox(width: 5),
-                                  Flexible(
-                                    child: Text(
-                                      r.placeName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final showHelp = constraints.maxWidth >= 220;
+                                  final showMode = constraints.maxWidth >= 270;
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.location_on_outlined,
+                                        size: 16,
                                         color: Colors.white
-                                            .withValues(alpha: 0.85),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
+                                            .withValues(alpha: 0.8),
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const _AqiHelpButton(),
-                                  const SizedBox(width: 8),
-                                  _LocationModeChip(
-                                      isOverride: ov != null,
-                                      isFallback: gpsFallback),
-                                  const SizedBox(width: 2),
-                                  Icon(Icons.expand_more,
-                                      size: 16,
-                                      color:
-                                          Colors.white.withValues(alpha: 0.6)),
-                                ],
+                                      const SizedBox(width: 5),
+                                      Flexible(
+                                        child: Text(
+                                          r.placeName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: Colors.white
+                                                .withValues(alpha: 0.85),
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      if (showHelp) ...[
+                                        const SizedBox(width: 4),
+                                        const _AqiHelpButton(),
+                                      ],
+                                      if (showMode) ...[
+                                        const SizedBox(width: 8),
+                                        _LocationModeChip(
+                                          isOverride: ov != null,
+                                          isFallback: gpsFallback,
+                                        ),
+                                      ],
+                                      const SizedBox(width: 2),
+                                      Icon(
+                                        Icons.expand_more,
+                                        size: 16,
+                                        color: Colors.white
+                                            .withValues(alpha: 0.6),
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             ),
                           ),
@@ -202,8 +212,10 @@ class HomeScreen extends ConsumerWidget {
                           const SizedBox(height: 4),
                           AqiScaleStrip(aqi: r.usAqi),
                           const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
                               GlassChip(
                                 icon: Icons.blur_on,
@@ -211,19 +223,17 @@ class HomeScreen extends ConsumerWidget {
                                     'Dominan ${AqiHelper.dominantLabel(r.dominant)}',
                                 color: color,
                               ),
-                              if (r.temp != null) ...[
-                                const SizedBox(width: 8),
+                              if (r.temp != null)
                                 GlassChip(
                                   icon: Icons.thermostat_outlined,
                                   label: '${r.temp!.toStringAsFixed(0)}°C',
                                 ),
-                                const SizedBox(width: 8),
+                              if (r.temp != null)
                                 GlassChip(
                                   icon: Icons.water_drop_outlined,
                                   label:
                                       '${r.humidity?.toStringAsFixed(0) ?? '-'}%',
                                 ),
-                              ],
                             ],
                           ),
                           const SizedBox(height: 4),
@@ -360,94 +370,6 @@ class HomeScreen extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-/// Header beranda — logo + chip offline + tombol akun (avatar).
-/// Tombol akun membuka profil bila sudah login, layar masuk/daftar
-/// bila belum.
-class _HomeHeader extends ConsumerWidget {
-  final bool fromCache;
-  const _HomeHeader({required this.fromCache});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authUserProvider);
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8),
-        child: Row(
-          children: [
-            Image.asset(
-              'assets/logo-mark.png',
-              width: 40,
-              height: 40,
-              fit: BoxFit.contain,
-              semanticLabel: 'Logo LUMAIR',
-              errorBuilder: (_, __, ___) => Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.air, color: Colors.white),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'LUMAIR',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2.5,
-                color: Colors.white.withValues(alpha: 0.95),
-              ),
-            ),
-            const Spacer(),
-            if (fromCache)
-              const GlassChip(icon: Icons.cloud_off_outlined, label: 'offline'),
-            const SizedBox(width: 8),
-            InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AuthScreen()),
-              ),
-              child: auth == null
-                  ? Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.08),
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.22)),
-                      ),
-                      child: const Icon(Icons.person_outline,
-                          color: Color(0xFFCBD5E1), size: 20),
-                    )
-                  : CircleAvatar(
-                      radius: 19,
-                      backgroundColor: const Color(0xFF34D399),
-                      child: Text(
-                        auth.displayName.isEmpty
-                            ? '?'
-                            : auth.displayName[0].toUpperCase(),
-                        style: const TextStyle(
-                            color: Color(0xFF06111F),
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15),
-                      ),
-                    ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -953,31 +875,6 @@ class _StaticShell extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.air, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'LUMAIR',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 2.5,
-                      color: Colors.white.withValues(alpha: 0.95),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
               if (notice != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),

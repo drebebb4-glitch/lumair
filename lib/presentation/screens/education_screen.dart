@@ -92,22 +92,9 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: false,
-        title: Row(
-          children: [
-            Image.asset('assets/logo-mark.png',
-                width: 32,
-                height: 32,
-                fit: BoxFit.contain,
-                semanticLabel: 'Logo LUMAIR',
-                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: ScreenTitle(
-                title: 'Edukasi Udara',
-                purpose: 'Kenapa udara kotor bahaya & cara melindungi diri',
-              ),
-            ),
-          ],
+        title: const ScreenTitle(
+          title: 'Edukasi Udara',
+          purpose: 'Kenapa udara kotor bahaya & cara melindungi diri',
         ),
       ),
       body: RefreshIndicator(
@@ -116,8 +103,7 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
         onRefresh: () => ref.read(articlesProvider.notifier).load(),
         child: LayoutBuilder(
           builder: (context, c) {
-            final reading =
-                aqi.maybeWhen(data: (r) => r, orElse: () => null);
+            final reading = aqi.maybeWhen(data: (r) => r, orElse: () => null);
             final live = reading == null
                 ? const SizedBox.shrink()
                 : _LivePanel(reading: reading);
@@ -560,8 +546,7 @@ class _EditorialCardState extends State<_EditorialCard> {
         color: accent.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: accent.withValues(
-              alpha: _expanded ? 0.6 : 0.35),
+          color: accent.withValues(alpha: _expanded ? 0.6 : 0.35),
         ),
       ),
       child: Material(
@@ -608,47 +593,45 @@ class _EditorialCardState extends State<_EditorialCard> {
                   alignment: Alignment.topCenter,
                   child: _expanded
                       ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 8),
-                              for (final p in article.body) ...[
-                                Text(p,
-                                    style: TextStyle(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.72),
-                                        fontSize: 13,
-                                        height: 1.6)),
-                                const SizedBox(height: 6),
-                              ],
-                              const SizedBox(height: 4),
-                              // Pintasan halaman penuh (foto + layout lengkap).
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () => _openArticle(context, article),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.open_in_new,
-                                        size: 13,
-                                        color: accent),
-                                    const SizedBox(width: 4),
-                                    Text('Buka halaman penuh',
-                                        style: TextStyle(
-                                            color: accent,
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w700)),
-                                  ],
-                                ),
-                              ),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 8),
+                            for (final p in article.body) ...[
+                              Text(p,
+                                  style: TextStyle(
+                                      color:
+                                          Colors.white.withValues(alpha: 0.72),
+                                      fontSize: 13,
+                                      height: 1.6)),
+                              const SizedBox(height: 6),
                             ],
-                          )
-                        : const SizedBox(width: double.infinity),
-                  ),
+                            const SizedBox(height: 4),
+                            // Pintasan halaman penuh (foto + layout lengkap).
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => _openArticle(context, article),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.open_in_new,
+                                      size: 13, color: accent),
+                                  const SizedBox(width: 4),
+                                  Text('Buka halaman penuh',
+                                      style: TextStyle(
+                                          color: accent,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox(width: double.infinity),
+                ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    Text(
-                        _expanded ? 'TUTUP' : 'BACA SELENGKAPNYA',
+                    Text(_expanded ? 'TUTUP' : 'BACA SELENGKAPNYA',
                         style: TextStyle(
                             color: accent,
                             fontSize: 10.5,
@@ -658,8 +641,7 @@ class _EditorialCardState extends State<_EditorialCard> {
                     AnimatedRotation(
                       duration: const Duration(milliseconds: 260),
                       turns: _expanded ? -0.5 : 0,
-                      child: Icon(Icons.expand_more,
-                          color: accent, size: 16),
+                      child: Icon(Icons.expand_more, color: accent, size: 16),
                     ),
                     const Spacer(),
                     Text('${article.body.length} paragraf',
@@ -804,7 +786,8 @@ class _WideCard extends StatelessWidget {
 
 class _ArticleDetail extends StatelessWidget {
   final Article article;
-  const _ArticleDetail({required this.article});  @override
+  const _ArticleDetail({required this.article});
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(article.kicker)),
@@ -1006,11 +989,9 @@ class _SearchRow extends StatelessWidget {
               SizedBox(width: 10),
               Expanded(
                 child: Text('Cari informasi, tips, dan panduan lainnya',
-                    style: TextStyle(
-                        color: Color(0xFFCBD5E1), fontSize: 13)),
+                    style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13)),
               ),
-              Icon(Icons.chevron_right,
-                  size: 18, color: Color(0xFF64748B)),
+              Icon(Icons.chevron_right, size: 18, color: Color(0xFF64748B)),
             ],
           ),
         ),
@@ -1107,8 +1088,8 @@ class _ArticleSearchDialogState extends State<_ArticleSearchDialog> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                      color: Colors.white
-                                          .withValues(alpha: 0.45),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.45),
                                       fontSize: 11)),
                               onTap: () {
                                 Navigator.of(context).pop();
