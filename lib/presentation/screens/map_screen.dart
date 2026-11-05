@@ -173,6 +173,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 .toList(),
             orElse: () => const <AirQualityReading>[],
           );
+          final landscape =
+              MediaQuery.of(context).orientation == Orientation.landscape;
+          // Pill kredit penyedia peta — wajib tampil (atribusi OSM/Esri).
+          final creditPill = Align(
+            alignment: Alignment.center,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.45),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(base.credit,
+                  style: TextStyle(
+                      fontSize: 9.5, color: Colors.grey.shade300)),
+            ),
+          );
           return Stack(
             children: [
               FlutterMap(
@@ -350,44 +367,62 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
 
               // ── HUD bawah: status udara sekarang / hasil probe ──
+              // Portrait: strip penuh selebar layar. Landscape: kartu
+              // kiri-bawah dengan lebar terbatas (520) supaya peta tetap
+              // terbuka di tengah & kanan dan tidak menimpa badge kota.
               Positioned(
                 left: 12,
-                right: 12,
+                right: landscape ? null : 12,
                 bottom: 14,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    (_probe != null)
-                        ? _ProbeHud(
-                            point: _probe!,
-                            name: _probeName,
-                            onClose: _clearProbe,
-                          )
-                        : _CurrentHud(
-                            reading: r,
-                            basemapName: base.name,
-                            onOpenDetail: () => _openDetail(context, r),
-                            onSetHome: () => _setHome(
-                                name: r.placeName, lat: r.lat, lon: r.lon),
-                          ),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.center,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(base.credit,
-                            style: TextStyle(
-                                fontSize: 9.5, color: Colors.grey.shade300)),
+                child: landscape
+                    ? ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: (_probe != null)
+                            ? _ProbeHud(
+                                point: _probe!,
+                                name: _probeName,
+                                onClose: _clearProbe,
+                              )
+                            : _CurrentHud(
+                                reading: r,
+                                basemapName: base.name,
+                                onOpenDetail: () => _openDetail(context, r),
+                                onSetHome: () => _setHome(
+                                    name: r.placeName, lat: r.lat, lon: r.lon),
+                              ),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          (_probe != null)
+                              ? _ProbeHud(
+                                  point: _probe!,
+                                  name: _probeName,
+                                  onClose: _clearProbe,
+                                )
+                              : _CurrentHud(
+                                  reading: r,
+                                  basemapName: base.name,
+                                  onOpenDetail: () => _openDetail(context, r),
+                                  onSetHome: () => _setHome(
+                                      name: r.placeName,
+                                      lat: r.lat,
+                                      lon: r.lon),
+                                ),
+                          const SizedBox(height: 6),
+                          creditPill,
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
+
+              // Kredit penyedia peta — landscape: tersendiri di kanan-bawah
+              // supaya tidak menumpuk dengan kartu HUD kiri.
+              if (landscape)
+                Positioned(
+                  right: 12,
+                  bottom: 14,
+                  child: creditPill,
+                ),
             ],
           );
         },

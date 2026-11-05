@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/aqi_helper.dart';
+import '../../core/app_theme.dart';
 import '../../domain/models/air_quality.dart';
 import '../widgets/glass.dart';
 
@@ -100,11 +101,18 @@ class DetailScreen extends StatelessWidget {
           if (landscape) {
             return Row(
               children: [
+                // Kolom kiri: panel konteks — header AQI + kartu "melebihi
+                // batas". Kartu mengikuti tinggi konten (bisa diskrol),
+                // tidak lagi membentang penuh dengan ruang kosong.
                 SizedBox(
                   width: 260,
-                  child: Padding(
+                  child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 8, 4, 24),
-                    child: _summaryCard(aqiColor),
+                    children: [
+                      _summaryCard(aqiColor),
+                      const SizedBox(height: AppSpacing.sm),
+                      _exceedCard(),
+                    ],
                   ),
                 ),
                 Expanded(
@@ -113,7 +121,10 @@ class DetailScreen extends StatelessWidget {
                     return ListView(
                       padding: const EdgeInsets.fromLTRB(4, 8, 16, 24),
                       children: [
-                        if (wide) _pollutantsWrap(aqiColor) else ..._pollutantCards(aqiColor),
+                        if (wide)
+                          _pollutantsWrap(aqiColor)
+                        else
+                          ..._pollutantCards(aqiColor),
                       ],
                     );
                   }),
@@ -142,8 +153,8 @@ class DetailScreen extends StatelessWidget {
       .toList();
 
   Widget _pollutantsWrap(Color aqiColor) => Wrap(
-        runSpacing: 10,
-        spacing: 10,
+        runSpacing: AppSpacing.md,
+        spacing: AppSpacing.md,
         children: _items()
             .map((p) => SizedBox(
                   width: 260,
@@ -152,6 +163,8 @@ class DetailScreen extends StatelessWidget {
             .toList(),
       );
 
+  /// Kartu ringkasan — angka AQI besar + kategori + chip dominan + saran
+  /// aksi dalam bahasa awam (AqiHelper.advice). Dipakai portrait & landscape.
   Widget _summaryCard(Color aqiColor) => GlassCard(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -161,7 +174,8 @@ class DetailScreen extends StatelessWidget {
             Colors.white.withValues(alpha: 0.05),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('${reading.usAqi}',
                 style: TextStyle(
@@ -170,28 +184,123 @@ class DetailScreen extends StatelessWidget {
                     color: aqiColor,
                     height: 1.0,
                     letterSpacing: -1)),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                      'AQI ${reading.usAqi} — ${AqiHelper.category(reading.usAqi)}',
-                      style: const TextStyle(
-                          color: Color(0xFFE2E8F0),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15)),
-                  const SizedBox(height: 3),
-                  Text(
-                      'Dominan: ${AqiHelper.dominantLabel(reading.dominant)}${reading.fromCache ? ' • offline' : ''}',
-                      style: const TextStyle(
-                          color: Color(0xFF94A3B8), fontSize: 13)),
-                ],
-              ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+                'AQI ${reading.usAqi} — ${AqiHelper.category(reading.usAqi)}',
+                style: const TextStyle(
+                    color: Color(0xFFE2E8F0),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15)),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.xs,
+              children: [
+                _dominantChip(aqiColor),
+                if (reading.fromCache) _miniChip(),
+              ],
             ),
+            const SizedBox(height: AppSpacing.md),
+            Text(AqiHelper.advice(reading.usAqi),
+                style: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 12.5,
+                    height: 1.45)),
           ],
         ),
       );
+
+  Widget _dominantChip(Color aqiColor) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: aqiColor.withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: aqiColor.withValues(alpha: 0.55)),
+        ),
+        child: Text('Dominan: ${AqiHelper.dominantLabel(reading.dominant)}',
+            style: TextStyle(
+                color: aqiColor, fontSize: 11, fontWeight: FontWeight.w700)),
+      );
+
+  Widget _miniChip() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF94A3B8).withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+              color: const Color(0xFF94A3B8).withValues(alpha: 0.40)),
+        ),
+        child: const Text('offline',
+            style: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 11,
+                fontWeight: FontWeight.w600)),
+      );
+
+  /// Kartu "Melebihi batas aman" — daftar polutan yang nilainya di atas
+  /// batas beserta rasionya; kolom kiri landscape jadi lebih informatif,
+  /// tidak cuma angka AQI besar (Golden Rule 8: kurangi beban memori).
+  Widget _exceedCard() {
+    final over = _items().where((p) => p.value >= p.warnAt).toList();
+    return GlassCard(
+      child: over.isEmpty
+          ? const Row(
+              children: [
+                Icon(Icons.verified_outlined,
+                    size: 16, color: Color(0xFF34D399)),
+                SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text('Semua polutan masih dalam batas aman',
+                      style: TextStyle(
+                          color: Color(0xFF94A3B8),
+                          fontSize: 12.5,
+                          height: 1.4)),
+                ),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(children: [
+                  Icon(Icons.warning_amber_rounded,
+                      size: 16, color: Color(0xFFF87171)),
+                  SizedBox(width: AppSpacing.sm),
+                  Text('Melebihi batas aman',
+                      style: TextStyle(
+                          color: Color(0xFFE2E8F0),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13)),
+                ]),
+                const SizedBox(height: AppSpacing.xs),
+                for (final p in over)
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.xs),
+                    child: Row(children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                            color: Color(0xFFEF4444), shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                          child: Text(p.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: Color(0xFFE2E8F0), fontSize: 12.5))),
+                      Text(
+                          '${(p.value / p.warnAt).toStringAsFixed(1)}× batas',
+                          style: const TextStyle(
+                              color: Color(0xFFF87171),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+              ],
+            ),
+    );
+  }
 
   Widget _pollutantCard(_PollutantInfo p, Color aqiColor) {
     final over = p.value >= p.warnAt;
@@ -348,8 +457,10 @@ class DetailScreen extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.sm),
           Text(p.desc,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.55),
                   fontSize: 12.5,
