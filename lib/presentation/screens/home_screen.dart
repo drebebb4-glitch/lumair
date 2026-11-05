@@ -11,7 +11,6 @@ import '../widgets/scale_strip.dart';
 import '../widgets/activity_card.dart';
 import 'detail_screen.dart';
 import 'forecast_screen.dart';
-import 'favorites_screen.dart';
 import 'map_screen.dart';
 
 /// Beranda LUMAIR 2.0 — pola app modern: hero AQI + skala + aktivitas
@@ -452,50 +451,19 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _QuickAction(
-                            icon: Icons.map_outlined,
-                            label: 'Peta',
-                            sub: 'Zona AQI kota',
-                            color: const Color(0xFF38BDF8),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const MapScreen()),
-                            ),
-                          ),
+                    SizedBox(
+                      width: double.infinity,
+                      child: _QuickAction(
+                        icon: Icons.map_outlined,
+                        label: 'Peta',
+                        sub: 'Zona AQI kota',
+                        color: const Color(0xFF38BDF8),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const MapScreen()),
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _QuickAction(
-                            icon: Icons.show_chart_outlined,
-                            label: 'Prakiraan',
-                            sub: '24 jam & 4 hari',
-                            color: const Color(0xFFA78BFA),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const ForecastScreen()),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _QuickAction(
-                            icon: Icons.favorite_border,
-                            label: 'Favorit',
-                            sub: 'Kota tersimpan',
-                            color: const Color(0xFFF472B6),
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const FavoritesScreen()),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
