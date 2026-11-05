@@ -19,15 +19,6 @@ import 'map_screen.dart';
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  int _severity(int aqi) {
-    if (aqi <= 50) return 0;
-    if (aqi <= 100) return 1;
-    if (aqi <= 150) return 2;
-    if (aqi <= 200) return 3;
-    if (aqi <= 300) return 4;
-    return 5;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final aqi = ref.watch(aqiProvider);
@@ -37,21 +28,39 @@ class HomeScreen extends ConsumerWidget {
         child: _Skeleton(),
       ),
       error: (e, _) => _StaticShell(
-        child: _ErrorCard(message: '$e', onRetry: () {
-          ref.invalidate(locationProvider);
-        }),
+        child: _ErrorCard(
+            message: '$e',
+            onRetry: () {
+              ref.invalidate(locationProvider);
+            }),
       ),
       data: (r) {
         final color = AqiHelper.color(r.usAqi);
         final loc = ref.watch(locationProvider);
-        final ov = ref.watch(homeLocationProvider);
-        final gpsFallback = loc.maybeWhen(data: (l) => l.isFallback, orElse: () => false);
+        final gpsFallback =
+            loc.maybeWhen(data: (l) => l.isFallback, orElse: () => false);
+        final now = DateTime.now();
+        final age = now.difference(r.time);
+        final status = r.fromCache
+            ? (label: 'Offline', color: const Color(0xFF38BDF8))
+            : age >= const Duration(hours: 1)
+                ? (label: 'Data lama', color: const Color(0xFFFBBF24))
+                : (label: 'Live', color: const Color(0xFF34D399));
+        final pollutants = _rankPollutants(r);
+        final forecast = ref.watch(forecastProvider).maybeWhen(
+              data: (points) => points
+                  .where((point) => point.time.isAfter(now))
+                  .take(6)
+                  .toList(),
+              orElse: () => const <ForecastPoint>[],
+            );
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: Stack(
             fit: StackFit.expand,
             children: [
-              AuroraBackground(accent: color, severity: _severity(r.usAqi)),
+              AuroraBackground(
+                  accent: color, severity: AqiHelper.severity(r.usAqi)),
               RefreshIndicator(
                 color: Colors.white,
                 backgroundColor: const Color(0xFF0B1220),
@@ -62,26 +71,24 @@ class HomeScreen extends ConsumerWidget {
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-                    children: [
-                    // ── Banner status lokasi/internet ──
+                  children: [
                     if (gpsFallback)
-                      const _StatusBanner(
+                      _StatusBanner(
                         icon: Icons.location_city_outlined,
-                        color: Color(0xFFFBBF24),
-                        text:
-                            'Akses lokasi gak aktif — sementara pakai Jakarta. Tap nama kota di atas buat pilih kota manual.',
+                        color: const Color(0xFFFBBF24),
+                        text: 'Akses GPS gak aktif — lokasi contoh: '
+                            '${r.placeName}. Tap nama lokasi untuk memilih kota.',
                       ),
                     if (r.fromCache) ...[
                       const SizedBox(height: 8),
                       const _StatusBanner(
                         icon: Icons.cloud_off_outlined,
                         color: Color(0xFF38BDF8),
-                        text: 'Lagi offline — ini data terakhir yang kesimpen.',
+                        text:
+                            'Data langsung tidak tersedia. Angka ini data contoh, bukan data tersimpan.',
                       ),
                     ],
                     const SizedBox(height: 14),
-
-                    // ── VERDICT dulu: jawaban buat manusia, bukan angka ──
                     GlassCard(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -91,178 +98,299 @@ class HomeScreen extends ConsumerWidget {
                           color.withValues(alpha: 0.08),
                         ],
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.20),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                  color: color.withValues(alpha: 0.5)),
-                            ),
-                            child: Icon(Icons.spa_outlined,
-                                color: color, size: 24),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${AqiHelper.category(r.usAqi)} • ${r.placeName}',
-                                  style: TextStyle(
-                                    color: color,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  AqiHelper.headline(r.usAqi),
-                                  style: const TextStyle(
-                                    color: Color(0xFFE2E8F0),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // ── Angka: gauge + skala (pendukung jawaban) ──
-                    GlassCard(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white.withValues(alpha: 0.10),
-                          color.withValues(alpha: 0.07),
-                        ],
-                      ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Bar lokasi — tap buat ganti/pilih lokasi
-                          InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () => showLocationPickerSheet(context),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 4, horizontal: 8),
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final showHelp = constraints.maxWidth >= 220;
-                                  final showMode = constraints.maxWidth >= 270;
-                                  return Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.location_on_outlined,
-                                        size: 16,
-                                        color: Colors.white
-                                            .withValues(alpha: 0.8),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Flexible(
-                                        child: Text(
-                                          r.placeName,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: Colors.white
-                                                .withValues(alpha: 0.85),
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
+                          Row(
+                            children: [
+                              Expanded(
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () => showLocationPickerSheet(context),
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 4),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.location_on_outlined,
+                                            size: 20, color: Color(0xFFE2E8F0)),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            r.placeName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: Color(0xFFE2E8F0),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 17,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      if (showHelp) ...[
-                                        const SizedBox(width: 4),
-                                        const _AqiHelpButton(),
+                                        Icon(Icons.expand_more,
+                                            size: 20,
+                                            color: Colors.white
+                                                .withValues(alpha: 0.7)),
                                       ],
-                                      if (showMode) ...[
-                                        const SizedBox(width: 8),
-                                        _LocationModeChip(
-                                          isOverride: ov != null,
-                                          isFallback: gpsFallback,
-                                        ),
-                                      ],
-                                      const SizedBox(width: 2),
-                                      Icon(
-                                        Icons.expand_more,
-                                        size: 16,
-                                        color: Colors.white
-                                            .withValues(alpha: 0.6),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          AqiGauge(aqi: r.usAqi, color: color),
-                          const SizedBox(height: 4),
-                          AqiScaleStrip(aqi: r.usAqi),
-                          const SizedBox(height: 16),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              GlassChip(
-                                icon: Icons.blur_on,
-                                label:
-                                    'Dominan ${AqiHelper.dominantLabel(r.dominant)}',
-                                color: color,
-                              ),
-                              if (r.temp != null)
-                                GlassChip(
-                                  icon: Icons.thermostat_outlined,
-                                  label: '${r.temp!.toStringAsFixed(0)}°C',
+                                    ),
+                                  ),
                                 ),
-                              if (r.temp != null)
-                                GlassChip(
-                                  icon: Icons.water_drop_outlined,
-                                  label:
-                                      '${r.humidity?.toStringAsFixed(0) ?? '-'}%',
-                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const _AqiHelpButton(),
+                              const SizedBox(width: 8),
+                              _StatusBadge(
+                                  label: status.label, color: status.color),
                             ],
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 8),
                           Text(
-                            'Update ${r.time.hour.toString().padLeft(2, '0')}:${r.time.minute.toString().padLeft(2, '0')} • tarik ke bawah untuk refresh',
+                            _indonesianDate(r.time),
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.45),
-                              fontSize: 10.5,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Diukur ${_clockTime(r.time)} • ${_relativeTime(r.time, now)}',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.72),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 14),
+                            child: Divider(height: 1, color: Colors.white24),
+                          ),
+                          Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.18),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: color.withValues(alpha: 0.5)),
+                                ),
+                                child: Icon(Icons.spa_outlined,
+                                    color: color, size: 24),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'AQI ${r.usAqi} • ${AqiHelper.category(r.usAqi)}',
+                                      style: TextStyle(
+                                        color: color,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      AqiHelper.headline(r.usAqi),
+                                      style: const TextStyle(
+                                        color: Color(0xFFE2E8F0),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Center(child: AqiGauge(aqi: r.usAqi, color: color)),
+                          const SizedBox(height: 4),
+                          MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.2),
+                            ),
+                            child: AqiScaleStrip(aqi: r.usAqi),
+                          ),
+                          if (pollutants.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Center(
+                              child: GlassChip(
+                                icon: Icons.blur_on,
+                                label:
+                                    'Dominan ${AqiHelper.dominantLabel(pollutants.first.key)}',
+                                color: color,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
                     const SizedBox(height: 14),
-
-                    // ── Aktivitas: outdoor / olahraga / anak ──
                     GlassCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _sectionLabel('AKTIVITAS DI KONDISI INI'),
+                          _sectionLabel('CUACA'),
                           const SizedBox(height: 10),
-                          ActivityCard(aqi: r.usAqi),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _WeatherValue(
+                                  icon: Icons.thermostat_outlined,
+                                  label: 'Suhu',
+                                  value: r.temp == null
+                                      ? '—'
+                                      : '${r.temp!.toStringAsFixed(1)}°C',
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _WeatherValue(
+                                  icon: Icons.water_drop_outlined,
+                                  label: 'Kelembapan',
+                                  value: r.humidity == null
+                                      ? '—'
+                                      : '${r.humidity!.toStringAsFixed(0)}%',
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
+                    if (pollutants.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      GlassCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(child: _sectionLabel('POLUTAN UTAMA')),
+                                TextButton(
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            DetailScreen(reading: r)),
+                                  ),
+                                  child: const Text('Lihat semua',
+                                      style: TextStyle(
+                                          color: Color(0xFF7DD3FC),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            for (final pollutant in pollutants.take(4))
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 7),
+                                child: Row(
+                                  children: [
+                                    Icon(pollutant.icon,
+                                        size: 20,
+                                        color: const Color(0xFFCBD5E1)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                          AqiHelper.dominantLabel(
+                                              pollutant.key),
+                                          style: const TextStyle(
+                                              color: Color(0xFFE2E8F0),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600)),
+                                    ),
+                                    Text(
+                                      '${_formatPollutant(pollutant.value)} ${pollutant.unit}',
+                                      style: const TextStyle(
+                                          color: Color(0xFFE2E8F0),
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (forecast.isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(24),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ForecastScreen()),
+                        ),
+                        child: GlassCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                      child: _sectionLabel(
+                                          'PRAKIRAAN BEBERAPA JAM KE DEPAN')),
+                                  const Icon(Icons.arrow_forward,
+                                      color: Color(0xFFCBD5E1), size: 18),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                height: 72,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: forecast.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 10),
+                                  itemBuilder: (context, index) {
+                                    final point = forecast[index];
+                                    final forecastColor =
+                                        AqiHelper.color(point.aqi);
+                                    return Container(
+                                      width: 82,
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.06),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                            color: forecastColor.withValues(
+                                                alpha: 0.4)),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(_clockTime(point.time),
+                                              style: const TextStyle(
+                                                  color: Color(0xFFCBD5E1),
+                                                  fontSize: 12)),
+                                          const SizedBox(height: 4),
+                                          Text('AQI ${point.aqi}',
+                                              style: TextStyle(
+                                                  color: forecastColor,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w800)),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 14),
-
-                    // ── Rekomendasi kesehatan ──
                     GlassCard(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -291,7 +419,7 @@ class HomeScreen extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _sectionLabel('APA YANG HARUS LU LAKUKAN'),
+                                _sectionLabel('REKOMENDASI KESEHATAN'),
                                 const SizedBox(height: 4),
                                 Text(
                                   AqiHelper.advice(r.usAqi),
@@ -307,9 +435,23 @@ class HomeScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
-
-                    // ── Quick actions ──
+                    const SizedBox(height: 14),
+                    GlassCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sectionLabel('AKTIVITAS DI KONDISI INI'),
+                          const SizedBox(height: 10),
+                          MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              textScaler: const TextScaler.linear(1.27),
+                            ),
+                            child: ActivityCard(aqi: r.usAqi),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
@@ -320,7 +462,8 @@ class HomeScreen extends ConsumerWidget {
                             color: const Color(0xFF38BDF8),
                             onTap: () => Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const MapScreen()),
+                              MaterialPageRoute(
+                                  builder: (_) => const MapScreen()),
                             ),
                           ),
                         ),
@@ -354,15 +497,6 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    FilledButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => DetailScreen(reading: r)),
-                      ),
-                      icon: const Icon(Icons.analytics_outlined),
-                      label: const Text('Cek apa aja isinya di udara lu'),
-                    ),
                   ],
                 ),
               ),
@@ -374,10 +508,149 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
+List<_HomePollutant> _rankPollutants(AirQualityReading reading) {
+  final pollutants = [
+    _HomePollutant('pm2_5', reading.pm25, 35, Icons.blur_on),
+    _HomePollutant('pm10', reading.pm10, 70, Icons.grain),
+    _HomePollutant('o3', reading.o3, 100, Icons.wb_sunny_outlined),
+    _HomePollutant('no2', reading.no2, 40, Icons.directions_car_outlined),
+    _HomePollutant('so2', reading.so2, 40, Icons.factory_outlined),
+    _HomePollutant(
+        'co', reading.co, 4000, Icons.local_fire_department_outlined),
+  ].where((item) => item.value > 0 && item.value.isFinite).toList()
+    ..sort((a, b) => b.safeLimitRatio.compareTo(a.safeLimitRatio));
+  return pollutants;
+}
+
+String _indonesianDate(DateTime date) {
+  const weekdays = [
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
+  ];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+  ];
+  return '${weekdays[date.weekday - 1]}, ${date.day} '
+      '${months[date.month - 1]} ${date.year}';
+}
+
+String _clockTime(DateTime date) => '${date.hour.toString().padLeft(2, '0')}:'
+    '${date.minute.toString().padLeft(2, '0')}';
+
+String _relativeTime(DateTime date, DateTime now) {
+  final minutes = now.difference(date).inMinutes;
+  if (minutes < 1) return 'baru saja';
+  if (minutes < 60) return '$minutes menit lalu';
+  final hours = minutes ~/ 60;
+  if (hours < 24) return '$hours jam lalu';
+  return '${hours ~/ 24} hari lalu';
+}
+
+String _formatPollutant(double value) =>
+    value >= 100 ? value.toStringAsFixed(0) : value.toStringAsFixed(1);
+
+class _HomePollutant {
+  final String key;
+  final double value;
+  final double safeLimit;
+  final IconData icon;
+
+  const _HomePollutant(this.key, this.value, this.safeLimit, this.icon);
+
+  double get safeLimitRatio => value / safeLimit;
+  String get unit => 'µg/m³';
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatusBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              color: color, fontSize: 12, fontWeight: FontWeight.w800)),
+    );
+  }
+}
+
+class _WeatherValue extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _WeatherValue({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF7DD3FC)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 12)),
+                const SizedBox(height: 3),
+                Text(value,
+                    style: const TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 Widget _sectionLabel(String s) => Text(s,
     style: TextStyle(
-      color: Colors.white.withValues(alpha: 0.5),
-      fontSize: 11,
+      color: Colors.white.withValues(alpha: 0.72),
+      fontSize: 12,
       fontWeight: FontWeight.w700,
       letterSpacing: 1.4,
     ));
@@ -486,40 +759,6 @@ void showAqiHelpSheet(BuildContext context) {
   );
 }
 
-/// Label mode lokasi di beranda: GPS / Dipilih / Fallback.
-class _LocationModeChip extends StatelessWidget {
-  final bool isOverride;
-  final bool isFallback;
-  const _LocationModeChip({required this.isOverride, required this.isFallback});
-
-  @override
-  Widget build(BuildContext context) {
-    final (icon, label, c) = isOverride
-        ? (Icons.push_pin_outlined, 'Dipilih', const Color(0xFFFBBF24))
-        : isFallback
-            ? (Icons.location_city_outlined, 'Auto', const Color(0xFF94A3B8))
-            : (Icons.gps_fixed, 'GPS', const Color(0xFF34D399));
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: c.withValues(alpha: 0.45)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: c),
-          const SizedBox(width: 3),
-          Text(label,
-              style: TextStyle(
-                  color: c, fontSize: 9.5, fontWeight: FontWeight.w800)),
-        ],
-      ),
-    );
-  }
-}
-
 /// Sheet "pilih lokasi beranda": GPS sekarang, pencarian kota, 20 kota populer.
 void showLocationPickerSheet(BuildContext context) {
   showModalBottomSheet(
@@ -609,7 +848,9 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
               child: ListTile(
                 leading: gps.maybeWhen(
                   data: (l) => Icon(
-                    l.isFallback ? Icons.location_city_outlined : Icons.gps_fixed,
+                    l.isFallback
+                        ? Icons.location_city_outlined
+                        : Icons.gps_fixed,
                     color: override == null
                         ? const Color(0xFF34D399)
                         : const Color(0xFF94A3B8),
@@ -638,7 +879,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                         : '${l.lat.toStringAsFixed(4)}, ${l.lon.toStringAsFixed(4)}',
                     style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 11.5),
+                        fontSize: 12),
                   ),
                   orElse: () => const SizedBox.shrink(),
                 ),
@@ -687,7 +928,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
               Text('HASIL PENCARIAN',
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 10.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2)),
               const SizedBox(height: 6),
@@ -724,7 +965,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
             Text('KOTA BESAR INDONESIA',
                 style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 10.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2)),
             const SizedBox(height: 8),
@@ -773,7 +1014,8 @@ class _StatusBanner extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String text;
-  const _StatusBanner({required this.icon, required this.color, required this.text});
+  const _StatusBanner(
+      {required this.icon, required this.color, required this.text});
 
   @override
   Widget build(BuildContext context) {
@@ -850,7 +1092,7 @@ class _QuickAction extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.45),
-                      fontSize: 10)),
+                      fontSize: 12)),
             ],
           ),
         ),
@@ -908,7 +1150,9 @@ class _Skeleton extends StatelessWidget {
         );
     return ListView(
       children: [
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [bar(14, w: 140)]),
+        Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [bar(14, w: 140)]),
         const SizedBox(height: 20),
         GlassCard(
           child: Column(
