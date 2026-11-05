@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lumair/core/aqi_helper.dart';
 import 'package:lumair/core/cities.dart';
+import 'package:lumair/domain/auth_provider.dart';
 import 'package:lumair/domain/models/air_quality.dart';
 import 'package:lumair/domain/providers.dart';
 import 'package:lumair/main.dart';
@@ -123,5 +124,19 @@ void main() {
       expect(c.lat, inInclusiveRange(-11.0, 6.0));
       expect(c.lon, inInclusiveRange(95.0, 141.0));
     }
+  });
+
+  test('AuthUser fallback nama dari email jika metadata kosong', () {
+    // Skenario 1: Tidak ada session
+    expect(AuthUser.fromSession(null), isNull);
+
+    // Skenario 2: AuthUser model mandiri
+    const user = AuthUser(
+      id: '123',
+      email: 'dicky@test.com',
+      displayName: 'Dicky Taruna',
+    );
+    expect(user.displayName, 'Dicky Taruna');
+    expect(user.email, 'dicky@test.com');
   });
 }

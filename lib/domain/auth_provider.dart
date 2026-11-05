@@ -21,7 +21,13 @@ class AuthUser {
   static AuthUser? fromSession(Session? s) {
     final email = s?.user.email ?? '';
     if (s == null || email.isEmpty) return null;
-    // Nama tampilan: bagian depan email dipercantik ("budi@mail.com" → Budi).
+    // Cek nama dari user metadata jika didaftarkan dengan nama
+    final metaName = s.user.userMetadata?['full_name'] as String? ??
+        s.user.userMetadata?['name'] as String?;
+    if (metaName != null && metaName.trim().isNotEmpty) {
+      return AuthUser(id: s.user.id, email: email, displayName: metaName.trim());
+    }
+    // Fallback: bagian depan email dipercantik ("budi@mail.com" → Budi).
     final base = email.split('@').first;
     final name = base.length <= 1
         ? base.toUpperCase()
@@ -76,10 +82,16 @@ class AuthController {
     }
   }
 
-  Future<AuthOutcome> signUp(String email, String password) async {
+  Future<AuthOutcome> signUp(String email, String password, {String? fullName}) async {
     if (_client == null) return const AuthOutcome(success: false, message: 'Backend belum terhubung.');
     try {
-      final res = await _client.auth.signUp(email: email, password: password);
+      final res = await _client.auth.signUp(
+        email: email,
+        password: password,
+        data: fullName != null && fullName.trim().isNotEmpty
+            ? {'full_name': fullName.trim()}
+            : null,
+      );
       if (res.session != null) {
         return const AuthOutcome(success: true, message: 'Akun dibuat — kamu langsung masuk.');
       }
@@ -90,6 +102,32 @@ class AuthController {
       return AuthOutcome(success: false, message: _friendly(e.message));
     } catch (_) {
       return const AuthOutcome(success: false, message: 'Gagal daftar — cek koneksi internet.');
+    }
+  }
+
+  Future<AuthOutcome> resetPassword(String email) async {
+    if (_client == null) {
+      return const AuthOutcome(
+          success: false, message: 'Backend belum terhubung.');
+    }
+    final cleanEmail = email.trim();
+    if (cleanEmail.isEmpty ||
+        !cleanEmail.contains('@') ||
+        !cleanEmail.contains('.')) {
+      return const AuthOutcome(
+          success: false, message: 'Masukkan format email yang benar.');
+    }
+    try {
+      await _client.auth.resetPasswordForEmail(cleanEmail);
+      return const AuthOutcome(
+          success: true,
+          message: 'Tautan pemulihan kata sandi telah dikirim ke email kamu.');
+    } on AuthApiException catch (e) {
+      return AuthOutcome(success: false, message: _friendly(e.message));
+    } catch (_) {
+      return const AuthOutcome(
+          success: false,
+          message: 'Gagal mengirim email reset. Cek koneksi internet.');
     }
   }
 
