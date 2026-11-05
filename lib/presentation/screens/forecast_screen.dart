@@ -82,165 +82,423 @@ class ForecastScreen extends ConsumerWidget {
                   .reduce((a, b) => a + b) /
               (points.length > 6 ? points.skip(points.length - 6).length : 6);
 
-          return ListView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            children: [
-              _InsightBanner(
-                points: points,
-                best: best,
-                worst: worst,
-                avgFirst: avgFirst,
-                avgLast: avgLast,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              const _AqiInfoAccordion(),
-              const SizedBox(height: AppSpacing.md),
-
-              // ── Chart 24 jam ──
-              GlassCard(
-                radius: 20,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Tren AQI 24 jam ke depan',
-                        style: AppTextStyles.sectionTitle),
-                    const SizedBox(height: AppSpacing.xs),
-                    const Text(
-                        'Angka kecil = udara bersih. Garis putus-putus menandai '
-                        'batas kategori: 50 (Baik), 100 (Sedang), 150 (Sensitif). '
-                        'Sentuh garisnya untuk melihat detail tiap jam.',
-                        style: AppTextStyles.hint),
-                    const SizedBox(height: AppSpacing.md),
-                    SizedBox(
-                      height: 240,
-                      child: _LineChart24(
-                          points: points,
-                          maxAqi: maxAqi,
-                          maxPm25: maxPm25,
-                          best: best),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    const _LegendDots(),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-
-              // ── Ringkasan 4 hari ──
-              daily.maybeWhen(
-                data: (days) => days.isEmpty
-                    ? const SizedBox.shrink()
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Ringkasan 4 hari',
-                              style: AppTextStyles.sectionTitle),
-                          const SizedBox(height: AppSpacing.md),
-                          Row(
-                            children: [
-                              for (var i = 0; i < days.length; i++) ...[
-                                if (i > 0) const SizedBox(width: 8),
-                                Expanded(
-                                    child: _DayCard(
-                                        day: days[i], hari: _hari, index: i)),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                orElse: () => const SizedBox.shrink(),
-              ),
-
-              // ── Semua jam: chips menggeser ──
-              const Text('PER JAM, 24 JAM KE DEPAN — GESER KE SAMPING',
-                  style: AppTextStyles.sectionLabel),
-              const SizedBox(height: AppSpacing.sm),
-              const Text('Angka pada chip = AQI; warnanya mengikuti kategori di sebelah kanan.',
-                  style: AppTextStyles.caption),
-              const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: 74,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: points.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemBuilder: (_, i) {
-                    final p = points[i];
-                    final c = AqiHelper.color(p.aqi);
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: c.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: c.withValues(alpha: 0.5)),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(i == 0 ? 'sekarang' : _fmtHour(p.time),
-                              style: TextStyle(
-                                  color: Colors.white
-                                      .withValues(alpha: i == 0 ? 0.85 : 0.6),
-                                  fontSize: 10,
-                                  fontWeight: i == 0
-                                      ? FontWeight.w700
-                                      : FontWeight.w400)),
-                          const SizedBox(height: 2),
-                          Text('${p.aqi}',
-                              style: TextStyle(
-                                  color: c,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15)),
-                          Text(AqiHelper.category(p.aqi),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  color: c.withValues(alpha: 0.95),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700)),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              // ── Detail PM2.5 8 jam ke depan ──
-              const Text('PM2.5 — PARTIKEL HALUS, 8 JAM KE DEPAN (µg/m³)',
-                  style: AppTextStyles.sectionLabel),
-              const SizedBox(height: AppSpacing.sm),
-              const Text(
-                  'PM2.5 adalah partikel paling berbahaya karena bisa masuk ke paru dan darah. Bar makin panjang = makin banyak partikel di udara.',
-                  style: AppTextStyles.hint),
-              const SizedBox(height: AppSpacing.sm),
-              GlassCard(
-                radius: 18,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Column(
-                  children: [
-                    for (var i = 0; i < points.take(8).length; i++)
-                      _PmRow(
-                          point: points[i], maxPm25: maxPm25 > 0 ? maxPm25 : 1),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              const Text(
-                'Skala US AQI 0–500 — standar internasional yang juga dipakai '
-                'aplikasi kualitas udara global. Prakiraan diperbarui otomatis '
-                'setiap kali layar ini dibuka.',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.caption,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
+          // Responsif: landscape = layout dashboard dua kolom (referensi IQAir),
+          // portrait = satu kolom seperti semula. Keduanya memakai widget
+          // section yang sama agar identitas visual konsisten (Golden Rule 1).
+          final landscape =
+              MediaQuery.of(context).orientation == Orientation.landscape;
+          final dataLayout = _LayoutData(
+            points: points,
+            best: best,
+            worst: worst,
+            maxAqi: maxAqi,
+            maxPm25: maxPm25,
+            avgFirst: avgFirst,
+            avgLast: avgLast,
+            daily: daily,
           );
+          return landscape
+              ? _LandscapeBody(
+                  data: dataLayout,
+                )
+              : _PortraitBody(
+                  data: dataLayout,
+                );
         },
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Paket data turunan + dua body responsif.
+// Landscape = dashboard dua kolom ala IQAir (kolom kiri: banner + grafik;
+// kolom kanan: ringkasan 4 hari + daftar PM2.5 24 jam). Portrait = satu
+// kolom seperti semula. Keduanya memakai widget section yang sama agar
+// indentitas visual konsisten (Golden Rule 1) saat layar di-rotate.
+// ---------------------------------------------------------------------------
+
+class _LayoutData {
+  final List<ForecastPoint> points;
+  final ForecastPoint best;
+  final ForecastPoint worst;
+  final int maxAqi;
+  final double maxPm25;
+  final double avgFirst;
+  final double avgLast;
+  final AsyncValue<List<DayForecast>> daily;
+  const _LayoutData({
+    required this.points,
+    required this.best,
+    required this.worst,
+    required this.maxAqi,
+    required this.maxPm25,
+    required this.avgFirst,
+    required this.avgLast,
+    required this.daily,
+  });
+}
+
+class _PortraitBody extends StatelessWidget {
+  final _LayoutData data;
+  const _PortraitBody({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = data;
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      children: [
+        _InsightBanner(
+          points: p.points,
+          best: p.best,
+          worst: p.worst,
+          avgFirst: p.avgFirst,
+          avgLast: p.avgLast,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        const _AqiInfoAccordion(),
+        const SizedBox(height: AppSpacing.md),
+        _ChartCard(
+          points: p.points,
+          maxAqi: p.maxAqi,
+          maxPm25: p.maxPm25,
+          best: p.best,
+          chartHeight: 240,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _DayCardsSection(daily: p.daily, inCard: false),
+        _HourChipsSection(points: p.points),
+        const SizedBox(height: 14),
+        _PmListSection(
+            points: p.points.take(8).toList(),
+            maxPm25: p.maxPm25,
+            inCard: false),
+        const SizedBox(height: AppSpacing.xl),
+        const Text(
+          'Skala US AQI 0–500 — standar internasional yang juga dipakai '
+          'aplikasi kualitas udara global. Prakiraan diperbarui otomatis '
+          'setiap kali layar ini dibuka.',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.caption,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+      ],
+    );
+  }
+}
+
+class _LandscapeBody extends StatelessWidget {
+  final _LayoutData data;
+  const _LandscapeBody({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = data;
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Kartu edukasi kini full-width di atasnya — awam bisa membaca
+          // panduan sebelum melihat grafik akhirnya informatif di tiap orientasi.
+          const SizedBox(
+            width: double.infinity,
+            child: _AqiInfoAccordion(),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Kolom kiri: insight + grafik ──
+                Expanded(
+                  flex: 57,
+                  child: ListView(
+                    children: [
+                      _InsightBanner(
+                        points: p.points,
+                        best: p.best,
+                        worst: p.worst,
+                        avgFirst: p.avgFirst,
+                        avgLast: p.avgLast,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _ChartCard(
+                        points: p.points,
+                        maxAqi: p.maxAqi,
+                        maxPm25: p.maxPm25,
+                        best: p.best,
+                        chartHeight: 300,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      const Text(
+                        'Skala US AQI 0–500 — standar internasional. '
+                        'Prakiraan diperbarui otomatis tiap layar dibuka.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.caption,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                // ── Kolom kanan: ringkasan 4 hari + PM2.5 24 jam ──
+                Expanded(
+                  flex: 43,
+                  child: ListView(
+                    children: [
+                      _DayCardsSection(daily: p.daily, inCard: true),
+                      const SizedBox(height: AppSpacing.md),
+                      _PmListSection(
+                          points: p.points, maxPm25: p.maxPm25, inCard: true),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Section widget bersama — dipakai portrait & landscape.
+// ---------------------------------------------------------------------------
+
+/// Kartu grafik tren 24 jam; tinggi chart bisa beda per orientasi.
+class _ChartCard extends StatelessWidget {
+  final List<ForecastPoint> points;
+  final int maxAqi;
+  final double maxPm25;
+  final ForecastPoint best;
+  final double chartHeight;
+  const _ChartCard({
+    required this.points,
+    required this.maxAqi,
+    required this.maxPm25,
+    required this.best,
+    required this.chartHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      radius: 20,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Tren AQI 24 jam ke depan',
+              style: AppTextStyles.sectionTitle),
+          const SizedBox(height: AppSpacing.xs),
+          const Text(
+              'Angka kecil = udara bersih. Garis putus-putus menandai '
+              'batas kategori: 50 (Baik), 100 (Sedang), 150 (Sensitif). '
+              'Sentuh garisnya untuk melihat detail tiap jam.',
+              style: AppTextStyles.hint),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            height: chartHeight,
+            child: _LineChart24(
+                points: points,
+                maxAqi: maxAqi,
+                maxPm25: maxPm25,
+                best: best),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          const _LegendDots(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Section "Ringkasan 4 hari". inCard=true (landscape): kepala ikon +
+/// judul berada di dalam satu kartu; inCard=false (portrait): judul polos.
+class _DayCardsSection extends StatelessWidget {
+  final AsyncValue<List<DayForecast>> daily;
+  final bool inCard;
+  const _DayCardsSection({required this.daily, required this.inCard});
+
+  Widget _cards(List<DayForecast> days) => Row(
+        children: [
+          for (var i = 0; i < days.length; i++) ...[
+            if (i > 0) const SizedBox(width: AppSpacing.sm),
+            Expanded(
+                child: _DayCard(
+                    day: days[i], hari: ForecastScreen._hari, index: i)),
+          ],
+        ],
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return daily.maybeWhen(
+      data: (days) {
+        if (days.isEmpty) return const SizedBox.shrink();
+        if (inCard) {
+          return GlassCard(
+            radius: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(children: [
+                  Icon(Icons.calendar_month_rounded,
+                      size: 18, color: Color(0xFF94A3B8)),
+                  SizedBox(width: AppSpacing.sm),
+                  Text('Ringkasan 4 hari', style: AppTextStyles.sectionTitle),
+                ]),
+                const SizedBox(height: AppSpacing.lg),
+                _cards(days),
+              ],
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Ringkasan 4 hari', style: AppTextStyles.sectionTitle),
+            const SizedBox(height: AppSpacing.md),
+            _cards(days),
+            const SizedBox(height: AppSpacing.lg),
+          ],
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// Chips per jam, geser ke samping — portrait saja (landscape tergantikan
+/// daftar PM2.5 24 jam supaya tidak ada informasi ganda).
+class _HourChipsSection extends StatelessWidget {
+  final List<ForecastPoint> points;
+  const _HourChipsSection({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('PER JAM, 24 JAM KE DEPAN — GESER KE SAMPING',
+            style: AppTextStyles.sectionLabel),
+        const SizedBox(height: AppSpacing.sm),
+        const Text(
+            'Angka pada chip = AQI; warnanya mengikuti kategori di sebelah kanan.',
+            style: AppTextStyles.caption),
+        const SizedBox(height: AppSpacing.sm),
+        SizedBox(
+          height: 74,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: points.length,
+            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+            itemBuilder: (_, i) {
+              final p = points[i];
+              final c = AqiHelper.color(p.aqi);
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: c.withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(i == 0 ? 'sekarang' : ForecastScreen._fmtHour(p.time),
+                        style: TextStyle(
+                            color: Colors.white
+                                .withValues(alpha: i == 0 ? 0.85 : 0.6),
+                            fontSize: 10,
+                            fontWeight:
+                                i == 0 ? FontWeight.w700 : FontWeight.w400)),
+                    const SizedBox(height: 2),
+                    Text('${p.aqi}',
+                        style: TextStyle(
+                            color: c,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15)),
+                    Text(AqiHelper.category(p.aqi),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: c.withValues(alpha: 0.95),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Daftar bar PM2.5 per jam. inCard=true (landscape): kartu dengan kepala
+/// "Per jam, 24 jam ke depan" dan seluruh 24 baris; inCard=false (portrait):
+/// label + 8 baris memakai kartu lama.
+class _PmListSection extends StatelessWidget {
+  final List<ForecastPoint> points;
+  final double maxPm25;
+  final bool inCard;
+  const _PmListSection({
+    required this.points,
+    required this.maxPm25,
+    required this.inCard,
+  });
+
+  Widget _rows() => Column(
+        children: [
+          for (var i = 0; i < points.length; i++)
+            _PmRow(point: points[i], maxPm25: maxPm25 > 0 ? maxPm25 : 1),
+        ],
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    if (inCard) {
+      return GlassCard(
+        radius: 20,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(children: [
+              Icon(Icons.schedule_rounded, size: 18, color: Color(0xFF94A3B8)),
+              SizedBox(width: AppSpacing.sm),
+              Text('Per jam, 24 jam ke depan', style: AppTextStyles.sectionTitle),
+            ]),
+            const SizedBox(height: AppSpacing.xs),
+            const Text(
+                'Konsentrasi PM2.5 (µg/m³) — bar makin panjang berarti '
+                'partikel makin banyak; warna badge mengikuti kategori AQI.',
+                style: AppTextStyles.hint),
+            const SizedBox(height: AppSpacing.md),
+            _rows(),
+          ],
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('PM2.5 — PARTIKEL HALUS, 8 JAM KE DEPAN (µg/m³)',
+            style: AppTextStyles.sectionLabel),
+        const SizedBox(height: AppSpacing.sm),
+        const Text(
+            'PM2.5 adalah partikel paling berbahaya karena bisa masuk ke paru dan darah. Bar makin panjang = makin banyak partikel di udara.',
+            style: AppTextStyles.hint),
+        const SizedBox(height: AppSpacing.sm),
+        GlassCard(
+          radius: 18,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: _rows(),
+        ),
+      ],
     );
   }
 }
@@ -762,6 +1020,17 @@ class _DayCard extends StatelessWidget {
   final int index;
   const _DayCard({required this.day, required this.hari, required this.index});
 
+  /// Rentang ambang kategori maxAQI harian — konteks angka agar awam tahu
+  /// apakah nilainya nyaris naik kategori atau masih aman jauh.
+  String _band(int aqi) {
+    if (aqi <= 50) return '0–50';
+    if (aqi <= 100) return '51–100';
+    if (aqi <= 150) return '101–150';
+    if (aqi <= 200) return '151–200';
+    if (aqi <= 300) return '201–300';
+    return '301–500';
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AqiHelper.color(day.maxAqi);
@@ -798,7 +1067,12 @@ class _DayCard extends StatelessWidget {
                   color: c.withValues(alpha: 0.95),
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700)),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 2),
+          Text('(${_band(day.maxAqi)})',
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 10.5)),
+          const SizedBox(height: AppSpacing.xs),
           Text('puncak ${day.peakHour}:00',
               style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.55),
@@ -851,15 +1125,19 @@ class _PmRow extends StatelessWidget {
                 style: TextStyle(
                     color: c, fontSize: 11.5, fontWeight: FontWeight.w700)),
           ),
-          SizedBox(
-            width: 64,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: c.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: c.withValues(alpha: 0.5)),
+            ),
             child: Text(AqiHelper.category(point.aqi),
-                textAlign: TextAlign.right,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     color: c.withValues(alpha: 0.95),
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w700)),
           ),
         ],
