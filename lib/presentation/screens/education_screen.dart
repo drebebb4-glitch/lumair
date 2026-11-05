@@ -1,12 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/aqi_helper.dart';
 import '../../data/api/articles_api.dart';
-import '../../domain/providers.dart';
-import '../../domain/models/air_quality.dart';
 import '../widgets/glass.dart';
-import '../widgets/activity_card.dart';
 
 // ---------------------------------------------------------------------------
 // State
@@ -37,7 +33,7 @@ final articlesProvider =
 // Screen
 // ---------------------------------------------------------------------------
 
-/// Edukasi statis (PRD P0) + kartu live yang nyambung ke AQI user.
+/// Halaman edukasi dengan panel pengetahuan singkat dan artikel.
 /// Artikel hidup dari JSON repo — auto-refresh tiap 5 menit, bisa tarik-kebawah.
 class EducationScreen extends ConsumerStatefulWidget {
   const EducationScreen({super.key});
@@ -87,7 +83,6 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final aqi = ref.watch(aqiProvider);
     final articles = ref.watch(articlesProvider);
     return Scaffold(
       appBar: AppBar(
@@ -103,10 +98,6 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
         onRefresh: () => ref.read(articlesProvider.notifier).load(),
         child: LayoutBuilder(
           builder: (context, c) {
-            final reading = aqi.maybeWhen(data: (r) => r, orElse: () => null);
-            final live = reading == null
-                ? const SizedBox.shrink()
-                : _LivePanel(reading: reading);
             final status = _ArticlesStatus(
               result: articles.maybeWhen(data: (a) => a, orElse: () => null),
               loading: articles.isLoading,
@@ -154,8 +145,6 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
-                          live,
-                          const SizedBox(height: 8),
                           _SearchRow(articles: articles),
                         ],
                       ),
@@ -179,8 +168,6 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
-                live,
-                const SizedBox(height: 8),
                 _SearchRow(articles: articles),
                 const SizedBox(height: 8),
                 status,
@@ -893,75 +880,6 @@ class _ArticleDetail extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: _contentParts(),
       );
-}
-
-/// Kartu kondisi udara saat ini — ikut mockup edukasi.
-class _LivePanel extends StatelessWidget {
-  final AirQualityReading reading;
-  const _LivePanel({required this.reading});
-
-  @override
-  Widget build(BuildContext context) {
-    final r = reading;
-    final c = AqiHelper.color(r.usAqi);
-    return GlassCard(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          c.withValues(alpha: 0.16),
-          Colors.white.withValues(alpha: 0.05),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('UDARA LU SEKARANG',
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4)),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Text('${r.usAqi}',
-                  style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                      color: c,
-                      height: 1.0)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text('${AqiHelper.category(r.usAqi)} • ${r.placeName}',
-                    style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ActivityCard(aqi: r.usAqi),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.info_outline,
-                  size: 14, color: Colors.white.withValues(alpha: 0.45)),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                    'Pengguna lengkap skala & batas aman ada di artikel bawah',
-                    style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.45),
-                        fontSize: 11.5)),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Baris "Cari informasi, tips, dan panduan lainnya" — buka pencarian artikel.
