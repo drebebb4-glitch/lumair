@@ -35,11 +35,11 @@ void main() {
     await tester.pump();
 
     expect(find.text('LUMAIR'), findsOneWidget);
-    // Bottom nav: 6 item, index awal 0. (Assert byIcon di-skip: codepoint
+    // Bottom nav: 5 item, index awal 0. (Assert byIcon di-skip: codepoint
     // font Material Symbols tidak stabil antar run di env ini.)
     final bar = tester.widget<BottomNavigationBar>(
         find.byType(BottomNavigationBar));
-    expect(bar.items.length, 6);
+    expect(bar.items.length, 5);
     expect(bar.currentIndex, 0);
     expect(find.text('Beranda'), findsOneWidget); // tab aktif awal
   });

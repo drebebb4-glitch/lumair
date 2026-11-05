@@ -13,7 +13,6 @@ import 'screens/education_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/forecast_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/map_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'widgets/glass.dart';
 import 'widgets/slide_page.dart';
@@ -130,7 +129,6 @@ class _RootNavState extends ConsumerState<_RootNav> {
   static const _screens = [
     HomeScreen(),
     ForecastScreen(),
-    MapScreen(),
     FavoritesScreen(),
     EducationScreen(),
     CommunityScreen(),
@@ -214,11 +212,6 @@ class _RootNavState extends ConsumerState<_RootNav> {
                 icon: Icon(Icons.show_chart_outlined),
                 activeIcon: Icon(Icons.show_chart),
                 label: 'Prakiraan',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.map_outlined),
-                activeIcon: Icon(Icons.map),
-                label: 'Peta',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.favorite_border),
