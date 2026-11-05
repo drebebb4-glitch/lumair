@@ -68,12 +68,18 @@ class OpenMeteoApi {
     final now = DateTime.now();
     final out = <ForecastPoint>[];
     for (var i = 0; i < times.length && out.length < 24; i++) {
-      final t = DateTime.tryParse(times[i]) ?? now;
-      if (t.isAfter(now.subtract(const Duration(hours: 1)))) {
+      final raw = DateTime.tryParse(times[i]) ?? now;
+      // Bulatkan ke jam penuh supaya sumbu waktu beraturan (masukan dosen).
+      final t = DateTime(raw.year, raw.month, raw.day, raw.hour);
+      if (t.isAfter(now.subtract(const Duration(minutes: 45)))) {
         out.add(ForecastPoint(time: t, aqi: aqis[i], pm25: pms[i]));
       }
     }
-    return out;
+    final unique = <DateTime, ForecastPoint>{};
+    for (final p in out) {
+      unique.putIfAbsent(p.time, () => p);
+    }
+    return unique.values.toList();
   }
 
   /// Ringkasan 4 hari ke depan dari hourly (janji PRD: grafik + list 4 hari).
@@ -97,7 +103,8 @@ class OpenMeteoApi {
     // Kelompokkan per tanggal, hanya jam yang masih akan datang.
     final buckets = <String, List<ForecastPoint>>{};
     for (var i = 0; i < times.length; i++) {
-      final t = DateTime.tryParse(times[i]) ?? now;
+      final raw = DateTime.tryParse(times[i]) ?? now;
+      final t = DateTime(raw.year, raw.month, raw.day, raw.hour);
       if (!t.isAfter(now.subtract(const Duration(hours: 1)))) continue;
       final key =
           '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';

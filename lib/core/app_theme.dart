@@ -91,3 +91,61 @@ class AppTheme {
   /// Alias lama (dipakai main.dart sebelum makeover) — sekarang gelap premium.
   static ThemeData get light => dark;
 }
+
+/// Spacing token — skala grid 4 pt. Satu-satunya sumber jarak antar elemen
+/// agar rhythm halaman konsisten (masukan dosen: spacing belum diatur).
+class AppSpacing {
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 12;
+  static const double lg = 16;
+  static const double xl = 20;
+  static const double xxl = 28;
+}
+
+/// Type scale halaman Prakiraan — ukuran & bobot terbatas (tidak acak),
+/// kontras teks sekunder dijaga slate #94A3B8, bukan putih transparan rendah.
+class AppTextStyles {
+  /// Judul besar bagian atas banner/hero.
+  static const TextStyle h1 = TextStyle(
+      color: Color(0xFFE2E8F0),
+      fontSize: 22,
+      fontWeight: FontWeight.w800,
+      height: 1.25);
+
+  /// Judul tiap section/card.
+  static const TextStyle sectionTitle = TextStyle(
+      color: Color(0xFFE2E8F0),
+      fontSize: 15,
+      fontWeight: FontWeight.w700,
+      height: 1.35);
+
+  /// Heading kecil huruf kapital (label grup chips/bar).
+  static const TextStyle sectionLabel = TextStyle(
+      color: Color(0xFF94A3B8),
+      fontSize: 11,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 1.1,
+      height: 1.4);
+
+  /// Teks isi utama.
+  static const TextStyle body = TextStyle(
+      color: Color(0xFFE2E8F0),
+      fontSize: 13,
+      fontWeight: FontWeight.w500,
+      height: 1.5);
+
+  /// Penjelasan pembantu / keterangan.
+  static const TextStyle hint = TextStyle(
+      color: Color(0xFF94A3B8),
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+      height: 1.45);
+
+  /// Keterangan kecil (footer, catatan sumber).
+  static const TextStyle caption = TextStyle(
+      color: Color(0xFF94A3B8),
+      fontSize: 11,
+      fontWeight: FontWeight.w500,
+      height: 1.4);
+}
