@@ -131,8 +131,8 @@ class _AlertSettingsScreenState extends ConsumerState<AlertSettingsScreen> {
                   onChanged: _toggle,
                 ),
                 if (!AlertScheduler.supported)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
                     child: Text(
                       kIsWeb
                           ? 'Mode web (demo): notifikasi hanya muncul lewat tombol di bawah '
