@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/api/articles_api.dart';
-import '../../domain/providers.dart';
 import '../widgets/glass.dart';
 
 // ---------------------------------------------------------------------------
@@ -918,16 +917,16 @@ class _DidYouKnowPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Row(
+          const Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Icons.air_outlined,
                 color: accent,
                 size: 34,
               ),
-              const SizedBox(width: 12),
-              const Expanded(
+              SizedBox(width: 12),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
