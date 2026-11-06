@@ -20,18 +20,38 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs = TabController(length: 2, vsync: this);
   final _formKey = GlobalKey<FormState>();
+  final _name = TextEditingController();
   final _email = TextEditingController();
   final _pass = TextEditingController();
+  final _confirmPass = TextEditingController();
   final _controller = AuthController();
+  bool _obscurePass = true;
+  bool _obscureConfirmPass = true;
   bool _busy = false;
   bool _success = false;
   String? _message;
 
   @override
+  void initState() {
+    super.initState();
+    _tabs.addListener(() {
+      if (_tabs.indexIsChanging) {
+        setState(() {
+          _message = null;
+          _success = false;
+        });
+        _formKey.currentState?.reset();
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _tabs.dispose();
+    _name.dispose();
     _email.dispose();
     _pass.dispose();
+    _confirmPass.dispose();
     super.dispose();
   }
 
@@ -45,18 +65,129 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     });
     final outcome = isLogin
         ? await _controller.signIn(_email.text.trim(), _pass.text)
-        : await _controller.signUp(_email.text.trim(), _pass.text);
+        : await _controller.signUp(
+            _email.text.trim(),
+            _pass.text,
+            fullName: _name.text.trim(),
+          );
     if (!mounted) return;
     setState(() {
       _busy = false;
-      _success = outcome.success && isLogin;
+      _success = outcome.success;
       _message = outcome.message;
     });
-    if (outcome.success && isLogin && mounted) {
-      await Future<void>.delayed(const Duration(milliseconds: 400));
-      if (!mounted) return;
-      Navigator.of(context).pop(true); // login sukses → tutup layar
+    if (outcome.success && mounted) {
+      final hasSession = ref.read(authUserProvider) != null;
+      if (isLogin || hasSession) {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
+        Navigator.of(context).pop(true); // login/masuk sukses → tutup layar
+      }
     }
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final resetEmail = TextEditingController(text: _email.text.trim());
+    bool sending = false;
+    String? resetMsg;
+    bool resetOk = false;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0B1220),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+              ),
+              title: const Row(
+                children: [
+                  Icon(Icons.lock_reset, color: Color(0xFF38BDF8), size: 24),
+                  SizedBox(width: 8),
+                  Text(
+                    'Pemulihan Password',
+                    style: TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Masukkan email akun kamu. Kami akan mengirim tautan untuk mengatur ulang kata sandi.',
+                    style: TextStyle(
+                        color: Color(0xFF94A3B8), fontSize: 13, height: 1.4),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: resetEmail,
+                    keyboardType: TextInputType.emailAddress,
+                    autofocus: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Email Akun',
+                      hintText: 'nama@email.com',
+                      prefixIcon: Icon(Icons.mail_outline, size: 20),
+                    ),
+                  ),
+                  if (resetMsg != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      resetMsg!,
+                      style: TextStyle(
+                        color: resetOk
+                            ? const Color(0xFF34D399)
+                            : const Color(0xFFEF4444),
+                        fontSize: 12.5,
+                        fontWeight:
+                            resetOk ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: sending ? null : () => Navigator.of(dialogCtx).pop(),
+                  child: const Text('Tutup',
+                      style: TextStyle(color: Color(0xFF94A3B8))),
+                ),
+                FilledButton(
+                  onPressed: sending
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            sending = true;
+                            resetMsg = null;
+                          });
+                          final res =
+                              await _controller.resetPassword(resetEmail.text);
+                          setDialogState(() {
+                            sending = false;
+                            resetOk = res.success;
+                            resetMsg = res.message;
+                          });
+                        },
+                  child: sending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Kirim Tautan'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -107,46 +238,135 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       const SizedBox(height: 16),
                       Form(
                         key: _formKey,
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: _email,
-                              keyboardType: TextInputType.emailAddress,
-                              autocorrect: false,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                hintText: 'nama@email.com',
-                                prefixIcon: Icon(Icons.mail_outline, size: 20),
-                              ),
-                              validator: (v) {
-                                final value = v?.trim() ?? '';
-                                if (value.isEmpty) return 'Email jangan kosong';
-                                if (!value.contains('@') ||
-                                    !value.contains('.')) {
-                                  return 'Format email belum benar';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _pass,
-                              obscureText: true,
-                              decoration: const InputDecoration(
-                                labelText: 'Password',
-                                hintText: 'minimal 6 karakter',
-                                prefixIcon: Icon(Icons.lock_outline, size: 20),
-                              ),
-                              validator: (v) => (v ?? '').length < 6
-                                  ? 'Minimal 6 karakter'
-                                  : null,
-                            ),
-                            const SizedBox(height: 18),
-                            AnimatedBuilder(
-                              animation: _tabs,
-                              builder: (context, _) {
-                                final isLogin = _tabs.index == 0;
-                                return FilledButton(
+                        child: AnimatedBuilder(
+                          animation: _tabs,
+                          builder: (context, _) {
+                            final isLogin = _tabs.index == 0;
+                            return Column(
+                              children: [
+                                if (!isLogin) ...[
+                                  TextFormField(
+                                    controller: _name,
+                                    textCapitalization: TextCapitalization.words,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Nama Lengkap',
+                                      hintText: 'nama kamu',
+                                      prefixIcon: Icon(Icons.person_outline, size: 20),
+                                    ),
+                                    validator: (v) {
+                                      if ((v ?? '').trim().isEmpty) return 'Nama jangan kosong';
+                                      return null;
+                                    },
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                                TextFormField(
+                                  controller: _email,
+                                  keyboardType: TextInputType.emailAddress,
+                                  autocorrect: false,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Email',
+                                    hintText: 'nama@email.com',
+                                    prefixIcon: Icon(Icons.mail_outline, size: 20),
+                                  ),
+                                  validator: (v) {
+                                    final value = v?.trim() ?? '';
+                                    if (value.isEmpty) return 'Email jangan kosong';
+                                    if (!value.contains('@') ||
+                                        !value.contains('.')) {
+                                      return 'Format email belum benar';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _pass,
+                                  obscureText: _obscurePass,
+                                  textInputAction: isLogin
+                                      ? TextInputAction.done
+                                      : TextInputAction.next,
+                                  onFieldSubmitted: (_) {
+                                    if (isLogin) _submit(true);
+                                  },
+                                  decoration: InputDecoration(
+                                    labelText: 'Password',
+                                    hintText: 'minimal 6 karakter',
+                                    prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePass
+                                            ? Icons.visibility_off
+                                            : Icons.visibility,
+                                        size: 20,
+                                        color: const Color(0xFF94A3B8),
+                                      ),
+                                      onPressed: () => setState(
+                                          () => _obscurePass = !_obscurePass),
+                                    ),
+                                  ),
+                                  validator: (v) => (v ?? '').length < 6
+                                      ? 'Minimal 6 karakter'
+                                      : null,
+                                ),
+                                if (isLogin) ...[
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton(
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 4, vertical: 2),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      onPressed: _busy
+                                          ? null
+                                          : () => _showForgotPasswordDialog(context),
+                                      child: const Text(
+                                        'Lupa password?',
+                                        style: TextStyle(
+                                          color: Color(0xFF38BDF8),
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                if (!isLogin) ...[
+                                  const SizedBox(height: 12),
+                                  TextFormField(
+                                    controller: _confirmPass,
+                                    obscureText: _obscureConfirmPass,
+                                    textInputAction: TextInputAction.done,
+                                    onFieldSubmitted: (_) => _submit(false),
+                                    decoration: InputDecoration(
+                                      labelText: 'Konfirmasi Password',
+                                      hintText: 'ulangi password',
+                                      prefixIcon: const Icon(Icons.lock_clock_outlined, size: 20),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscureConfirmPass
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                          size: 20,
+                                          color: const Color(0xFF94A3B8),
+                                        ),
+                                        onPressed: () => setState(() =>
+                                            _obscureConfirmPass =
+                                                !_obscureConfirmPass),
+                                      ),
+                                    ),
+                                    validator: (v) {
+                                      if ((v ?? '').isEmpty) return 'Konfirmasi password jangan kosong';
+                                      if (v != _pass.text) return 'Konfirmasi password harus sama';
+                                      return null;
+                                    },
+                                  ),
+                                ],
+                                const SizedBox(height: 18),
+                                FilledButton(
                                   onPressed:
                                       _busy ? null : () => _submit(isLogin),
                                   child: _busy
@@ -159,31 +379,57 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                       : Text(isLogin
                                           ? 'Masuk ke LUMAIR'
                                           : 'Buat akun baru'),
-                                );
-                              },
-                            ),
-                            if (_success) ...[
-                              const SizedBox(height: 12),
-                              const Center(
-                                child: GlassChip(
-                                  icon: Icons.check_circle_outline,
-                                  label: 'Berhasil masuk — kembali ke halaman',
-                                  color: Color(0xFF34D399),
                                 ),
-                              ),
-                            ],
-                            if (_message != null && !_success) ...[
-                              const SizedBox(height: 12),
-                              Text(
-                                _message!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                    color: Color(0xFFEF4444),
-                                    fontSize: 13,
-                                    height: 1.4),
-                              ),
-                            ],
-                          ],
+                                if (_message != null) ...[
+                                  const SizedBox(height: 14),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 14, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: (_success
+                                              ? const Color(0xFF34D399)
+                                              : const Color(0xFFEF4444))
+                                          .withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: (_success
+                                                ? const Color(0xFF34D399)
+                                                : const Color(0xFFEF4444))
+                                            .withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          _success
+                                              ? Icons.check_circle_outline
+                                              : Icons.error_outline,
+                                          size: 18,
+                                          color: _success
+                                              ? const Color(0xFF34D399)
+                                              : const Color(0xFFEF4444),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _message!,
+                                            style: TextStyle(
+                                              color: _success
+                                                  ? const Color(0xFF34D399)
+                                                  : const Color(0xFFEF4444),
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w600,
+                                              height: 1.3,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ],
@@ -253,9 +499,47 @@ class _AccountCardScreen extends ConsumerWidget {
                 const SizedBox(height: 18),
                 TextButton.icon(
                   onPressed: () async {
-                    await AuthController().signOut();
-                    if (!context.mounted) return;
-                    Navigator.of(context).pop();
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: const Color(0xFF0B1220),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.12)),
+                        ),
+                        title: const Text('Keluar dari Akun?',
+                            style: TextStyle(
+                                color: Color(0xFFE2E8F0),
+                                fontWeight: FontWeight.w700)),
+                        content: const Text(
+                          'Kamu perlu masuk kembali untuk mengirim laporan banjir atau penutupan jalan.',
+                          style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 13,
+                              height: 1.4),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(ctx).pop(false),
+                            child: const Text('Batal',
+                                style: TextStyle(color: Color(0xFF94A3B8))),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFEF4444),
+                            ),
+                            onPressed: () => Navigator.of(ctx).pop(true),
+                            child: const Text('Keluar'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await AuthController().signOut();
+                      if (!context.mounted) return;
+                      Navigator.of(context).pop();
+                    }
                   },
                   icon: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
                   label: const Text('Keluar akun',

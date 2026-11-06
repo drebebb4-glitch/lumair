@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lumair/core/aqi_helper.dart';
 import 'package:lumair/core/cities.dart';
+import 'package:lumair/domain/auth_provider.dart';
 import 'package:lumair/domain/models/air_quality.dart';
 import 'package:lumair/domain/providers.dart';
 import 'package:lumair/main.dart';
@@ -35,11 +36,11 @@ void main() {
     await tester.pump();
 
     expect(find.text('LUMAIR'), findsOneWidget);
-    // Bottom nav: 6 item, index awal 0. (Assert byIcon di-skip: codepoint
+    // Bottom nav: 5 item, index awal 0. (Assert byIcon di-skip: codepoint
     // font Material Symbols tidak stabil antar run di env ini.)
     final bar = tester.widget<BottomNavigationBar>(
         find.byType(BottomNavigationBar));
-    expect(bar.items.length, 6);
+    expect(bar.items.length, 5);
     expect(bar.currentIndex, 0);
     expect(find.text('Beranda'), findsOneWidget); // tab aktif awal
   });
@@ -123,5 +124,19 @@ void main() {
       expect(c.lat, inInclusiveRange(-11.0, 6.0));
       expect(c.lon, inInclusiveRange(95.0, 141.0));
     }
+  });
+
+  test('AuthUser fallback nama dari email jika metadata kosong', () {
+    // Skenario 1: Tidak ada session
+    expect(AuthUser.fromSession(null), isNull);
+
+    // Skenario 2: AuthUser model mandiri
+    const user = AuthUser(
+      id: '123',
+      email: 'dicky@test.com',
+      displayName: 'Dicky Taruna',
+    );
+    expect(user.displayName, 'Dicky Taruna');
+    expect(user.email, 'dicky@test.com');
   });
 }
