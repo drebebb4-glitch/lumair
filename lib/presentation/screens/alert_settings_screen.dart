@@ -61,32 +61,6 @@ class _AlertSettingsScreenState extends ConsumerState<AlertSettingsScreen> {
     }
   }
 
-  /// Notifikasi contoh: tidak bergantung pada AQI, untuk memastikan
-  /// izin & tampilan notifikasi berfungsi di perangkat ini.
-  Future<void> _sendSample() async {
-    try {
-      final svc = NotificationService.instance;
-      if (!svc.isSupported) {
-        _toast('Browser/perangkat ini tidak mendukung notifikasi.');
-        return;
-      }
-      final granted = await svc.requestPermission();
-      if (!mounted) return;
-      if (!granted) {
-        _toast('Izin notifikasi belum diberikan.');
-        return;
-      }
-      await svc.show(
-        placeKey: 'lumair_sample',
-        title: 'Notifikasi uji LUMAIR',
-        body: 'Kalau kamu membaca ini, peringatan dini kualitas udara sudah berfungsi.',
-      );
-      if (mounted) _toast('Notifikasi contoh dikirim.');
-    } catch (_) {
-      if (mounted) _toast('Notifikasi contoh gagal ditampilkan di perangkat ini.');
-    }
-  }
-
   Future<void> _pickHour({required bool start}) async {
     final s = ref.read(alertSettingsProvider);
     final initial = TimeOfDay(hour: start ? s.quietStartHour : s.quietEndHour, minute: 0);
@@ -267,15 +241,6 @@ class _AlertSettingsScreenState extends ConsumerState<AlertSettingsScreen> {
                             )
                           : const Icon(Icons.notifications_active_outlined),
                       label: Text(_checking ? 'Memeriksa…' : 'Periksa & uji notifikasi sekarang'),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _sendSample,
-                      icon: const Icon(Icons.send_outlined),
-                      label: const Text('Kirim notifikasi contoh'),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
