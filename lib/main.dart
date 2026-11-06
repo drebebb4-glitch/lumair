@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/app_theme.dart';
+import 'data/services/alert_worker.dart';
+import 'data/services/notification_service.dart';
 import 'data/services/supabase_service.dart';
 import 'presentation/root_navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SupabaseService.init();
+  // Peringatan dini: gagal init tidak boleh mencegah aplikasi terbuka.
+  try {
+    await NotificationService.instance.init();
+    await AlertScheduler.init();
+  } catch (_) {}
   runApp(const ProviderScope(child: LumairApp()));
 }
 
