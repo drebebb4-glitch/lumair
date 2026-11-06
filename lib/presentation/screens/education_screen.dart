@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/api/articles_api.dart';
+import '../../domain/providers.dart';
 import '../widgets/glass.dart';
 
 // ---------------------------------------------------------------------------
@@ -98,6 +99,7 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
         onRefresh: () => ref.read(articlesProvider.notifier).load(),
         child: LayoutBuilder(
           builder: (context, c) {
+            const learning = _DidYouKnowPanel();
             final status = _ArticlesStatus(
               result: articles.maybeWhen(data: (a) => a, orElse: () => null),
               loading: articles.isLoading,
@@ -145,6 +147,8 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
+                          learning,
+                          const SizedBox(height: 8),
                           _SearchRow(articles: articles),
                         ],
                       ),
@@ -168,6 +172,8 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
+                learning,
+                const SizedBox(height: 8),
                 _SearchRow(articles: articles),
                 const SizedBox(height: 8),
                 status,
@@ -880,6 +886,110 @@ class _ArticleDetail extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: _contentParts(),
       );
+}
+
+/// Kartu edukasi singkat sebagai pengganti panel kondisi udara saat ini.
+class _DidYouKnowPanel extends StatelessWidget {
+  const _DidYouKnowPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    const accent = Color(0xFF34D399);
+
+    return GlassCard(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0x2634D399),
+          Color(0x0DFFFFFF),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'TAHUKAH KAMU?',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.58),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.air_outlined,
+                color: accent,
+                size: 34,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PM2.5',
+                      style: TextStyle(
+                        color: Color(0xFF34D399),
+                        fontSize: 27,
+                        fontWeight: FontWeight.w800,
+                        height: 1.0,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'Partikel halus yang sangat kecil dan dapat masuk jauh ke dalam paru-paru.',
+                      style: TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 12.5,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.055),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.lightbulb_outline,
+                  color: accent,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tips: Periksa kualitas udara sebelum beraktivitas di luar ruangan.',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.68),
+                      fontSize: 11.5,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Baris "Cari informasi, tips, dan panduan lainnya" — buka pencarian artikel.
