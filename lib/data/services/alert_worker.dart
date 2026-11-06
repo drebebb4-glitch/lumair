@@ -50,6 +50,36 @@ class AlertScheduler {
   }
 }
 
+/// Ringkasan satu putaran pengecekan — supaya UI bisa menjelaskan
+/// apa yang sebenarnya terjadi (bukan sekadar "aman").
+class AlertRunResult {
+  /// Jumlah lokasi yang dipantau.
+  final int placeCount;
+
+  /// Lokasi yang gagal diambil datanya (offline/timeout).
+  final int fetchFailures;
+
+  /// Peringatan aktif (udara melewati ambang / diprediksi melewati).
+  final List<AqiAlert> alerts;
+
+  /// Notifikasi yang berhasil ditampilkan.
+  final int sent;
+
+  /// Notifikasi yang gagal ditampilkan (mis. izin ditolak).
+  final int showFailures;
+
+  const AlertRunResult({
+    this.placeCount = 0,
+    this.fetchFailures = 0,
+    this.alerts = const [],
+    this.sent = 0,
+    this.showFailures = 0,
+  });
+
+  bool get noPlaces => placeCount == 0;
+  bool get allFetchesFailed => placeCount > 0 && fetchFailures == placeCount;
+}
+
 /// Satu putaran pengecekan: ambil data tiap lokasi → evaluasi → notifikasi.
 /// Dipakai oleh background worker dan tombol "Cek sekarang" di UI.
 class AlertChecker {
@@ -62,20 +92,23 @@ class AlertChecker {
         _store = store ?? AlertStore(),
         _notifier = notifier ?? NotificationService.instance;
 
-  /// [force] = abaikan cooldown & jam tenang (untuk tombol uji manual).
-  /// Mengembalikan peringatan yang sedang aktif (sudah/akan dinotifikasikan).
-  Future<List<AqiAlert>> run({bool force = false, DateTime? now}) async {
+  /// [force] = abaikan cooldown, jam tenang, dan saklar utama (untuk tombol uji).
+  Future<AlertRunResult> run({bool force = false, DateTime? now}) async {
     final t = now ?? DateTime.now();
     final settings = await _store.loadSettings();
-    if (!settings.enabled && !force) return const [];
+    if (!settings.enabled && !force) return const AlertRunResult();
 
     final places = await _store.loadPlaces(includeFavorites: settings.includeFavorites);
-    if (places.isEmpty) return const [];
+    if (places.isEmpty) return const AlertRunResult();
 
     final history = await _store.loadHistory();
     final active = <AqiAlert>[];
+    var sent = 0;
+    var fetchFailures = 0;
+    var showFailures = 0;
 
     for (final place in places) {
+      AqiAlert? alert;
       try {
         final reading = await _api.getCurrent(
           lat: place.lat,
@@ -83,8 +116,7 @@ class AlertChecker {
           placeName: place.name,
         );
         final forecast = await _api.getHourly24(lat: place.lat, lon: place.lon);
-
-        final alert = AlertEngine.evaluate(
+        alert = AlertEngine.evaluate(
           placeKey: place.key,
           placeName: place.name,
           currentAqi: reading.usAqi,
@@ -92,24 +124,30 @@ class AlertChecker {
           settings: settings,
           now: t,
         );
+      } catch (_) {
+        // Satu lokasi gagal (offline/timeout) tidak boleh menghentikan yang lain.
+        fetchFailures++;
+        continue;
+      }
 
-        if (alert == null) {
-          // Udara sudah aman → episode berikutnya boleh memicu notifikasi lagi.
-          history.remove(place.key);
+      if (alert == null) {
+        // Udara sudah aman → episode berikutnya boleh memicu notifikasi lagi.
+        history.remove(place.key);
+        continue;
+      }
+      active.add(alert);
+
+      if (!force) {
+        if (AlertEngine.blockedByQuietHours(alert: alert, settings: settings, now: t)) {
+          continue; // tidak dicatat → akan dikirim setelah jam tenang selesai
+        }
+        if (!AlertEngine.shouldNotify(
+            alert: alert, previous: history[place.key], now: t)) {
           continue;
         }
-        active.add(alert);
+      }
 
-        if (!force) {
-          if (AlertEngine.blockedByQuietHours(alert: alert, settings: settings, now: t)) {
-            continue; // tidak dicatat → akan dikirim setelah jam tenang selesai
-          }
-          if (!AlertEngine.shouldNotify(
-              alert: alert, previous: history[place.key], now: t)) {
-            continue;
-          }
-        }
-
+      try {
         await _notifier.show(
           placeKey: place.key,
           title: alert.title,
@@ -121,12 +159,19 @@ class AlertChecker {
           kind: alert.kind,
           notifiedAt: t,
         );
+        sent++;
       } catch (_) {
-        // Satu lokasi gagal (offline/timeout) tidak boleh menghentikan yang lain.
+        showFailures++;
       }
     }
 
     await _store.saveHistory(history);
-    return active;
+    return AlertRunResult(
+      placeCount: places.length,
+      fetchFailures: fetchFailures,
+      alerts: active,
+      sent: sent,
+      showFailures: showFailures,
+    );
   }
 }
