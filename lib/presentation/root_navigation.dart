@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants.dart';
+import '../domain/alert_provider.dart';
 import '../domain/auth_provider.dart';
 import '../domain/providers.dart';
+import 'screens/alert_settings_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/community_screen.dart';
 import 'screens/education_screen.dart';
@@ -154,6 +156,8 @@ class _RootNavState extends ConsumerState<_RootNav> {
 
   @override
   Widget build(BuildContext context) {
+    // Sinkronkan lokasi beranda ke penyimpanan untuk worker peringatan dini.
+    ref.watch(alertLocationSyncProvider);
     final duration = MediaQuery.of(context).disableAnimations
         ? Duration.zero
         : kSlideDuration;
@@ -244,6 +248,7 @@ class _BrandHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authUserProvider);
+    final alertsOn = ref.watch(alertSettingsProvider.select((s) => s.enabled));
     final fromCache = ref
         .watch(aqiProvider)
         .maybeWhen(data: (reading) => reading.fromCache, orElse: () => false);
@@ -312,6 +317,22 @@ class _BrandHeader extends ConsumerWidget {
                         label: 'offline',
                       ),
                     if (fromCache) const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Peringatan dini',
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AlertSettingsScreen(),
+                        ),
+                      ),
+                      icon: Icon(
+                        alertsOn
+                            ? Icons.notifications_active
+                            : Icons.notifications_none,
+                        color: alertsOn
+                            ? const Color(0xFF34D399)
+                            : const Color(0xFFCBD5E1),
+                      ),
+                    ),
                     InkWell(
                       borderRadius: BorderRadius.circular(999),
                       onTap: () => Navigator.of(context).push(
