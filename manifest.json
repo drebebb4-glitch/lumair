@@ -1,0 +1,35 @@
+{
+    "name": "LUMAIR — Kualitas Udara",
+    "short_name": "LUMAIR",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#070B14",
+    "theme_color": "#070B14",
+    "description": "Cek kualitas udara kotamu: AQI, PM2.5, prakiraan, dan cara melindungi diri.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

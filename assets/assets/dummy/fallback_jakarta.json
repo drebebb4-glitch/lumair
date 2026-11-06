@@ -1,0 +1,17 @@
+{
+  "latitude": -6.2,
+  "longitude": 106.816666,
+  "current": {
+    "time": "2026-10-08T12:00",
+    "us_aqi": 128,
+    "european_aqi": 62,
+    "pm2_5": 46.5,
+    "pm10": 68.2,
+    "ozone": 42.0,
+    "nitrogen_dioxide": 28.4,
+    "sulphur_dioxide": 8.1,
+    "carbon_monoxide": 520.0,
+    "temperature_2m": 31.2,
+    "relative_humidity_2m": 72
+  }
+}

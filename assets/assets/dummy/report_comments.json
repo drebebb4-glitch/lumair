@@ -1,0 +1,32 @@
+{
+  "banjir": [
+    {
+      "id": "banjir-1",
+      "penulis": "Rani",
+      "isi": "Terima kasih infonya. Mohon berhati-hati saat melintas.",
+      "created_at": "2026-11-04T08:15:00Z"
+    },
+    {
+      "id": "banjir-2",
+      "penulis": "Dimas",
+      "isi": "Apakah genangannya masih menutup jalan?",
+      "created_at": "2026-11-04T08:32:00Z"
+    }
+  ],
+  "listrik_padam": [
+    {
+      "id": "listrik-1",
+      "penulis": "Ayu",
+      "isi": "Di sekitar sini listrik juga sedang padam.",
+      "created_at": "2026-11-04T09:05:00Z"
+    }
+  ],
+  "macet": [
+    {
+      "id": "macet-1",
+      "penulis": "Bima",
+      "isi": "Kendaraan masih bisa lewat, tetapi antreannya cukup panjang.",
+      "created_at": "2026-11-04T09:40:00Z"
+    }
+  ]
+}
