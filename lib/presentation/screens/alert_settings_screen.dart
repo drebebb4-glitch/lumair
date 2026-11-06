@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_theme.dart';
 import '../../core/aqi_helper.dart';
 import '../../data/services/alert_worker.dart';
+import '../../data/services/notification_service.dart';
 import '../../domain/alert_provider.dart';
 import '../../domain/models/alert_settings.dart';
 import '../widgets/glass.dart';
@@ -34,17 +36,54 @@ class _AlertSettingsScreenState extends ConsumerState<AlertSettingsScreen> {
   Future<void> _checkNow() async {
     setState(() => _checking = true);
     try {
-      final alerts = await AlertChecker().run(force: true);
+      // Di web izin browser harus diminta dari aksi pengguna (ketukan tombol ini).
+      final granted = await NotificationService.instance.requestPermission();
+      final r = await AlertChecker().run(force: true);
       if (!mounted) return;
-      if (alerts.isEmpty) {
-        _toast('Aman: udara di semua lokasi masih di bawah ambang peringatan.');
+      if (r.noPlaces) {
+        _toast('Belum ada lokasi tersimpan. Tunggu lokasi muncul di Beranda, lalu coba lagi.');
+      } else if (r.allFetchesFailed) {
+        _toast('Gagal mengambil data udara. Cek koneksi internet.');
+      } else if (r.alerts.isEmpty) {
+        _toast('Aman: udara di semua lokasi masih di bawah ambang peringatan '
+            '(ambang saat ini: AQI ≥ ${AlertSettings.thresholdFor(ref.read(alertSettingsProvider).minSeverity)}).');
+      } else if (r.sent > 0) {
+        _toast('${r.sent} peringatan dikirim. Cek notifikasi.');
       } else {
-        _toast('${alerts.length} peringatan dikirim. Cek bilah notifikasi.');
+        _toast(granted
+            ? 'Ada peringatan, tapi notifikasi gagal ditampilkan di perangkat ini.'
+            : 'Ada peringatan, tapi izin notifikasi belum diberikan. Izinkan notifikasi lalu coba lagi.');
       }
     } catch (_) {
-      if (mounted) _toast('Gagal memeriksa. Cek koneksi internet.');
+      if (mounted) _toast('Gagal memeriksa. Coba lagi.');
     } finally {
       if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  /// Notifikasi contoh: tidak bergantung pada AQI, untuk memastikan
+  /// izin & tampilan notifikasi berfungsi di perangkat ini.
+  Future<void> _sendSample() async {
+    try {
+      final svc = NotificationService.instance;
+      if (!svc.isSupported) {
+        _toast('Browser/perangkat ini tidak mendukung notifikasi.');
+        return;
+      }
+      final granted = await svc.requestPermission();
+      if (!mounted) return;
+      if (!granted) {
+        _toast('Izin notifikasi belum diberikan.');
+        return;
+      }
+      await svc.show(
+        placeKey: 'lumair_sample',
+        title: 'Notifikasi uji LUMAIR',
+        body: 'Kalau kamu membaca ini, peringatan dini kualitas udara sudah berfungsi.',
+      );
+      if (mounted) _toast('Notifikasi contoh dikirim.');
+    } catch (_) {
+      if (mounted) _toast('Notifikasi contoh gagal ditampilkan di perangkat ini.');
     }
   }
 
@@ -95,7 +134,11 @@ class _AlertSettingsScreenState extends ConsumerState<AlertSettingsScreen> {
                   const Padding(
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
-                      'Pemeriksaan di latar belakang saat ini hanya tersedia di Android.',
+                      kIsWeb
+                          ? 'Mode web (demo): notifikasi hanya muncul lewat tombol di bawah '
+                              'dan saat tab LUMAIR masih terbuka. Pemeriksaan otomatis '
+                              'di latar belakang hanya ada di Android.'
+                          : 'Pemeriksaan di latar belakang saat ini hanya tersedia di Android.',
                       style: AppTextStyles.caption,
                     ),
                   ),
@@ -224,6 +267,15 @@ class _AlertSettingsScreenState extends ConsumerState<AlertSettingsScreen> {
                             )
                           : const Icon(Icons.notifications_active_outlined),
                       label: Text(_checking ? 'Memeriksa…' : 'Periksa & uji notifikasi sekarang'),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _sendSample,
+                      icon: const Icon(Icons.send_outlined),
+                      label: const Text('Kirim notifikasi contoh'),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),

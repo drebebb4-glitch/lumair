@@ -1,5 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+// Web memakai Notification API browser; platform lain memakai stub kosong.
+import 'web_notifier_stub.dart'
+    if (dart.library.js_interop) 'web_notifier_web.dart' as web;
 
 /// Pembungkus flutter_local_notifications. Semua pemanggilan plugin ada di
 /// sini, jadi kalau API paket berubah cukup perbaiki satu file ini.
@@ -15,8 +20,16 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   bool _inited = false;
 
+  /// True bila platform ini bisa menampilkan notifikasi (Android atau browser
+  /// yang punya Notification API).
+  bool get isSupported => kIsWeb ? web.webNotificationsSupported() : true;
+
   Future<void> init() async {
     if (_inited) return;
+    if (kIsWeb) {
+      _inited = true; // web tidak memakai plugin
+      return;
+    }
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     await _plugin.initialize(
       settings: const InitializationSettings(android: android),
@@ -27,6 +40,7 @@ class NotificationService {
   /// Android 13+ butuh izin runtime POST_NOTIFICATIONS.
   /// Mengembalikan true bila notifikasi boleh tampil.
   Future<bool> requestPermission() async {
+    if (kIsWeb) return web.requestWebNotificationPermission();
     await init();
     final android = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
@@ -41,6 +55,14 @@ class NotificationService {
     required String body,
     Color? color,
   }) async {
+    if (kIsWeb) {
+      final ok = web.showWebNotification(title: title, body: body, tag: placeKey);
+      if (!ok) {
+        throw StateError(
+            'Notifikasi browser tidak ditampilkan (izin belum diberikan atau browser tidak mendukung).');
+      }
+      return;
+    }
     await init();
     await _plugin.show(
       id: _idFor(placeKey),
