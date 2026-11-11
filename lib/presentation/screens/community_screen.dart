@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
@@ -88,8 +90,7 @@ class _NotConfiguredView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_sync_outlined,
-                color: AppTheme.warning, size: 42),
+            Icon(Icons.cloud_sync_outlined, color: AppTheme.warning, size: 42),
             SizedBox(height: 10),
             Text('Belum terhubung ke backend',
                 style: TextStyle(
@@ -99,8 +100,8 @@ class _NotConfiguredView extends StatelessWidget {
               'Laporan butuh kredensial Supabase via --dart-define. '
               'Lihat panduan di README repo.',
               textAlign: TextAlign.center,
-              style:
-                  TextStyle(color: AppTheme.textMuted, fontSize: 12.5, height: 1.5),
+              style: TextStyle(
+                  color: AppTheme.textMuted, fontSize: 12.5, height: 1.5),
             ),
           ],
         ),
@@ -133,7 +134,8 @@ class _LoginGateView extends StatelessWidget {
                 'Supaya setiap laporan punya pemilik yang jelas, '
                 'masuk (atau daftar) dulu yuk — gratis, cuma email + password.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppTheme.textMuted, fontSize: 12.5, height: 1.5),
+                style: TextStyle(
+                    color: AppTheme.textMuted, fontSize: 12.5, height: 1.5),
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
@@ -249,8 +251,7 @@ class _ReportBody extends ConsumerWidget {
                         onOpenMap: r.hasCoordinates
                             ? () => Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        MapScreen(focusReport: r),
+                                    builder: (_) => MapScreen(focusReport: r),
                                   ),
                                 )
                             : null,
@@ -289,14 +290,15 @@ class _ReportBody extends ConsumerWidget {
                                   ),
                                 );
                                 if (ok == true) {
-                                  final deleted =
-                                      await ref.read(reportsControllerProvider).delete(r.id);
+                                  final deleted = await ref
+                                      .read(reportsControllerProvider)
+                                      .delete(r.id);
                                   if (!ctx.mounted) return;
                                   if (!deleted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                          content: Text(
-                                              'Gagal hapus — coba lagi.')),
+                                          content:
+                                              Text('Gagal hapus — coba lagi.')),
                                     );
                                   }
                                 }
@@ -351,8 +353,7 @@ class _SoftLoading extends StatelessWidget {
             const SizedBox(
               width: 26,
               height: 26,
-              child:
-                  CircularProgressIndicator(strokeWidth: 2.6),
+              child: CircularProgressIndicator(strokeWidth: 2.6),
             ),
             const SizedBox(height: 12),
             Text('Mengambil laporan…',
@@ -554,6 +555,59 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
     _prefillLocation();
   }
 
+  /// Golden Rule 5: deteksi draft yang belum dikirim, dipakai untuk
+  /// meminta konfirmasi sebelum form ditutup secara tidak sengaja.
+  bool get _isDraftDirty {
+    final defaultCats =
+        _categories.length == 1 && _categories.contains(ReportCategory.banjir);
+    return _deskripsi.text.trim().isNotEmpty || _point != null || !defaultCats;
+  }
+
+  /// Golden Rule 5 & 7: back/ditutup tidak langsung membuang tulisan —
+  /// tampilkan konfirmasi dulu, kecuali form masih kosong.
+  Future<void> _confirmDiscard() async {
+    if (_busy) return;
+    if (!_isDraftDirty) {
+      if (mounted) Navigator.of(context).pop();
+      return;
+    }
+    final discard = await showDialog<bool>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.nightSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        title: const Text('Buang laporan ini?',
+            style: TextStyle(color: AppTheme.textPrimary, fontSize: 16)),
+        content: const Text(
+          'Isian yang sudah ditulis akan hilang kalau ditutup sekarang.',
+          style:
+              TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Lanjut menulis',
+                style: TextStyle(color: AppTheme.textMuted)),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.danger,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Buang'),
+          ),
+        ],
+      ),
+    );
+    if (discard ?? false) {
+      if (mounted) Navigator.of(context).pop();
+    }
+  }
+
   Future<void> _prefillLocation() async {
     try {
       final loc = await ref.read(locationProvider.future);
@@ -569,8 +623,7 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
   }
 
   Future<void> _pickLocation() async {
-    final initial =
-        _point ?? _initialPoint ?? const LatLng(-6.2, 106.816666);
+    final initial = _point ?? _initialPoint ?? const LatLng(-6.2, 106.816666);
     final selected = await pickReportLocation(
       context,
       initialLocation: initial,
@@ -592,9 +645,14 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
           mark.locality,
           mark.subAdministrativeArea,
           mark.administrativeArea,
-        ].whereType<String>().map((value) => value.trim()).where((value) {
-          return value.isNotEmpty && value != locationLabel;
-        }).toSet().toList();
+        ]
+            .whereType<String>()
+            .map((value) => value.trim())
+            .where((value) {
+              return value.isNotEmpty && value != locationLabel;
+            })
+            .toSet()
+            .toList();
         if (detail.isNotEmpty) locationLabel = detail.join(', ');
         city = mark.locality?.trim().isNotEmpty == true
             ? mark.locality
@@ -645,14 +703,14 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
     );
     if (!mounted) return;
     if (res.success) {
+      // Golden Rule 4: tutup sesi menulis dengan dialog penyelesaian yang
+      // merangkum apa yang berhasil dikirim — bukan hanya pop lalu hilang.
+      final kota = _kota.text.trim();
+      final lokasi = _locationLabel ?? '-';
+      final kategori =
+          _categories.map((c) => ReportCategory.labels[c] ?? c).join(', ');
+      unawaited(_showSentDialog(kategori, kota, lokasi));
       Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res.message),
-          backgroundColor: const Color(0xFF134E2A),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
       return;
     }
     setState(() {
@@ -661,131 +719,210 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
     });
   }
 
+  /// Golden Rule 4: dialog penutup laporan (closure) di root navigator
+  /// agar tetap tampil setelah sheet form ditutup.
+  Future<void> _showSentDialog(
+      String kategori, String kota, String lokasi) async {
+    await showDialog<void>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.nightSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: AppTheme.accent, size: 26),
+            SizedBox(width: 8),
+            Text('Laporan Terkirim',
+                style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Laporan kamu sudah dibagikan ke komunitas.',
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            _sentRow('Kategori', kategori),
+            _sentRow('Kota', kota.isEmpty ? '-' : kota),
+            _sentRow('Lokasi', lokasi),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Selesai'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _sentRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 74,
+            child: Text(label,
+                style:
+                    const TextStyle(color: AppTheme.textFaint, fontSize: 12.5)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        18,
-        20,
-        16 + MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Tulis Laporan',
-                  style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 17)),
-              const SizedBox(height: 4),
-              Text(
-                'Laporan bebas boleh berulang — bukan barang susah ditulis ulang.',
-                style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
-              ),
-              const SizedBox(height: 14),
-
-              const Text(
-                'Pilih kategori (bisa lebih dari satu)',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  for (final category in ReportCategory.all)
-                    FilterChip(
-                      avatar: Icon(
-                        _reportIcon(category),
-                        size: 17,
-                        color: _categories.contains(category)
-                            ? _reportColor(category)
-                            : AppTheme.textMuted,
-                      ),
-                      label: Text(ReportCategory.labels[category]!),
-                      selected: _categories.contains(category),
-                      onSelected: (selected) => setState(() {
-                        if (selected) {
-                          _categories.add(category);
-                        } else {
-                          _categories.remove(category);
-                        }
-                      }),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              OutlinedButton.icon(
-                onPressed: _busy ? null : _pickLocation,
-                icon: const Icon(Icons.map_outlined),
-                label: Text(_point == null
-                    ? 'Pilih titik lokasi di peta'
-                    : 'Ubah titik lokasi di peta'),
-              ),
-              if (_locationLabel != null) ...[
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _confirmDiscard();
+      },
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          18,
+          20,
+          16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Tulis Laporan',
+                    style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 17)),
                 const SizedBox(height: 4),
                 Text(
-                  _locationLabel!,
-                  style: const TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 12,
+                  'Laporan bebas boleh berulang — bukan barang susah ditulis ulang.',
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Pilih kategori (bisa lebih dari satu)',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ],
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _kota,
-                decoration: const InputDecoration(
-                  labelText: 'Kota / daerah',
-                  prefixIcon: Icon(Icons.location_city_outlined, size: 20),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final category in ReportCategory.all)
+                      FilterChip(
+                        avatar: Icon(
+                          _reportIcon(category),
+                          size: 17,
+                          color: _categories.contains(category)
+                              ? _reportColor(category)
+                              : AppTheme.textMuted,
+                        ),
+                        label: Text(ReportCategory.labels[category]!),
+                        selected: _categories.contains(category),
+                        onSelected: (selected) => setState(() {
+                          if (selected) {
+                            _categories.add(category);
+                          } else {
+                            _categories.remove(category);
+                          }
+                        }),
+                      ),
+                  ],
                 ),
-                validator: (v) =>
-                    (v ?? '').trim().isEmpty ? 'Isi kota dulu' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _deskripsi,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Apa yang terjadi?',
-                  hintText: 'contoh: Jl. Ahmad Yani tergenang 30 cm selama 2 hari',
-                  alignLabelWithHint: true,
+                const SizedBox(height: 14),
+                OutlinedButton.icon(
+                  onPressed: _busy ? null : _pickLocation,
+                  icon: const Icon(Icons.map_outlined),
+                  label: Text(_point == null
+                      ? 'Pilih titik lokasi di peta'
+                      : 'Ubah titik lokasi di peta'),
                 ),
-                validator: (v) =>
-                    (v ?? '').trim().isEmpty ? 'Tulis deskripsi dulu' : null,
-              ),
-              if (_message != null) ...[
-                const SizedBox(height: 10),
-                Text(_message!,
+                if (_locationLabel != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _locationLabel!,
                     style: const TextStyle(
-                        color: AppTheme.danger, fontSize: 12.5)),
-              ],
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _busy ? null : _send,
-                  child: _busy
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Kirim Laporan'),
+                      color: AppTheme.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _kota,
+                  decoration: const InputDecoration(
+                    labelText: 'Kota / daerah',
+                    prefixIcon: Icon(Icons.location_city_outlined, size: 20),
+                  ),
+                  validator: (v) =>
+                      (v ?? '').trim().isEmpty ? 'Isi kota dulu' : null,
                 ),
-              ),
-              const SizedBox(height: 6),
-            ],
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _deskripsi,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Apa yang terjadi?',
+                    hintText:
+                        'contoh: Jl. Ahmad Yani tergenang 30 cm selama 2 hari',
+                    alignLabelWithHint: true,
+                  ),
+                  validator: (v) =>
+                      (v ?? '').trim().isEmpty ? 'Tulis deskripsi dulu' : null,
+                ),
+                if (_message != null) ...[
+                  const SizedBox(height: 10),
+                  Text(_message!,
+                      style: const TextStyle(
+                          color: AppTheme.danger, fontSize: 12.5)),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _busy ? null : _send,
+                    child: _busy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Kirim Laporan'),
+                  ),
+                ),
+                const SizedBox(height: 6),
+              ],
+            ),
           ),
         ),
       ),

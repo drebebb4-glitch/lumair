@@ -329,49 +329,53 @@ class _BrandHeader extends ConsumerWidget {
                         alertsOn
                             ? Icons.notifications_active
                             : Icons.notifications_none,
-                        color: alertsOn
-                            ? AppTheme.accent
-                            : AppTheme.textSoft,
+                        color: alertsOn ? AppTheme.accent : AppTheme.textSoft,
                       ),
                     ),
-                    InkWell(
-                      borderRadius: BorderRadius.circular(999),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const AuthScreen(),
+                    // Golden Rule 3: tombol tanpa teks diberi tooltip
+                    // agar tujuannya jelas sebelum diketuk.
+                    Tooltip(
+                      message:
+                          auth == null ? 'Masuk / daftar akun' : 'Akun saya',
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(999),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const AuthScreen(),
+                          ),
                         ),
+                        child: auth == null
+                            ? Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.22),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.person_outline,
+                                  color: AppTheme.textSoft,
+                                  size: 20,
+                                ),
+                              )
+                            : CircleAvatar(
+                                radius: 19,
+                                backgroundColor: AppTheme.accent,
+                                child: Text(
+                                  auth.displayName.isEmpty
+                                      ? '?'
+                                      : auth.displayName[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Color(0xFF06111F),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
                       ),
-                      child: auth == null
-                          ? Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.white.withValues(alpha: 0.08),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.22),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.person_outline,
-                                color: AppTheme.textSoft,
-                                size: 20,
-                              ),
-                            )
-                          : CircleAvatar(
-                              radius: 19,
-                              backgroundColor: AppTheme.accent,
-                              child: Text(
-                                auth.displayName.isEmpty
-                                    ? '?'
-                                    : auth.displayName[0].toUpperCase(),
-                                style: const TextStyle(
-                                  color: Color(0xFF06111F),
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ),
                     ),
                   ],
                 ),

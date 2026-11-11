@@ -105,39 +105,42 @@ class HomeScreen extends ConsumerWidget {
                             children: [
                               Expanded(
                                 child: Semantics(
-                                  button: true,
-                                  label: 'Ganti lokasi',
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(12),
-                                  onTap: () => showLocationPickerSheet(context),
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 4),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.location_on_outlined,
-                                            size: 20, color: AppTheme.textPrimary),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            r.placeName,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: AppTheme.textPrimary,
-                                              fontWeight: FontWeight.w700,
-                                              fontSize: 17,
+                                    button: true,
+                                    label: 'Ganti lokasi',
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () =>
+                                          showLocationPickerSheet(context),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 4),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                                Icons.location_on_outlined,
+                                                size: 20,
+                                                color: AppTheme.textPrimary),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                r.placeName,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: AppTheme.textPrimary,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 17,
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                            Icon(Icons.expand_more,
+                                                size: 20,
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.7)),
+                                          ],
                                         ),
-                                        Icon(Icons.expand_more,
-                                            size: 20,
-                                            color: Colors.white
-                                                .withValues(alpha: 0.7)),
-                                      ],
-                                    ),
-                                  ),
-                                )),
+                                      ),
+                                    )),
                               ),
                               const SizedBox(width: 8),
                               const _AqiHelpButton(),
@@ -210,7 +213,23 @@ class HomeScreen extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          Center(child: AqiGauge(aqi: r.usAqi, color: color)),
+                          // Golden Rule 2: shortcut pengguna mahir —
+                          // double-tap gauge langsung buka detail polutan.
+                          Center(
+                            child: Tooltip(
+                              message:
+                                  'Ketuk dua kali untuk buka detail polutan',
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onDoubleTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => DetailScreen(reading: r)),
+                                ),
+                                child: AqiGauge(aqi: r.usAqi, color: color),
+                              ),
+                            ),
+                          ),
                           const SizedBox(height: 4),
                           MediaQuery(
                             // Hormati pengaturan ukuran font sistem pengguna.
@@ -299,8 +318,7 @@ class HomeScreen extends ConsumerWidget {
                                 child: Row(
                                   children: [
                                     Icon(pollutant.icon,
-                                        size: 20,
-                                        color: AppTheme.textSoft),
+                                        size: 20, color: AppTheme.textSoft),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
@@ -467,8 +485,7 @@ class HomeScreen extends ConsumerWidget {
                         color: AppTheme.sky,
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                              builder: (_) => const MapScreen()),
+                          MaterialPageRoute(builder: (_) => const MapScreen()),
                         ),
                       ),
                     ),
@@ -826,9 +843,8 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                     l.isFallback
                         ? Icons.location_city_outlined
                         : Icons.gps_fixed,
-                    color: override == null
-                        ? AppTheme.accent
-                        : AppTheme.textMuted,
+                    color:
+                        override == null ? AppTheme.accent : AppTheme.textMuted,
                   ),
                   orElse: () => const SizedBox(
                     width: 18,
@@ -1190,7 +1206,8 @@ class _ErrorCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textMuted, fontSize: 12)),
+                style:
+                    const TextStyle(color: AppTheme.textMuted, fontSize: 12)),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: onRetry,

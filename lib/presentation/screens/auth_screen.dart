@@ -142,9 +142,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     Text(
                       resetMsg!,
                       style: TextStyle(
-                        color: resetOk
-                            ? AppTheme.accent
-                            : AppTheme.danger,
+                        color: resetOk ? AppTheme.accent : AppTheme.danger,
                         fontSize: 12.5,
                         fontWeight:
                             resetOk ? FontWeight.w600 : FontWeight.normal,
@@ -155,7 +153,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               ),
               actions: [
                 TextButton(
-                  onPressed: sending ? null : () => Navigator.of(dialogCtx).pop(),
+                  onPressed:
+                      sending ? null : () => Navigator.of(dialogCtx).pop(),
                   child: const Text('Tutup',
                       style: TextStyle(color: AppTheme.textMuted)),
                 ),
@@ -163,6 +162,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   onPressed: sending
                       ? null
                       : () async {
+                          // Golden Rule 5: cegah kirim ke email yang
+                          // jelas-jelas tidak valid sebelum panggil API.
+                          final email = resetEmail.text.trim();
+                          if (email.isEmpty ||
+                              !email.contains('@') ||
+                              !email.contains('.')) {
+                            setDialogState(() {
+                              resetMsg = 'Format email belum benar';
+                              resetOk = false;
+                            });
+                            return;
+                          }
                           setDialogState(() {
                             sending = true;
                             resetMsg = null;
@@ -221,8 +232,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                           controller: _tabs,
                           indicatorSize: TabBarIndicatorSize.tab,
                           indicator: BoxDecoration(
-                            color:
-                                AppTheme.accent.withValues(alpha: 0.2),
+                            color: AppTheme.accent.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           dividerColor: Colors.transparent,
@@ -248,14 +258,18 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                 if (!isLogin) ...[
                                   TextFormField(
                                     controller: _name,
-                                    textCapitalization: TextCapitalization.words,
+                                    textCapitalization:
+                                        TextCapitalization.words,
                                     decoration: const InputDecoration(
                                       labelText: 'Nama Lengkap',
                                       hintText: 'nama kamu',
-                                      prefixIcon: Icon(Icons.person_outline, size: 20),
+                                      prefixIcon:
+                                          Icon(Icons.person_outline, size: 20),
                                     ),
                                     validator: (v) {
-                                      if ((v ?? '').trim().isEmpty) return 'Nama jangan kosong';
+                                      if ((v ?? '').trim().isEmpty) {
+                                        return 'Nama jangan kosong';
+                                      }
                                       return null;
                                     },
                                   ),
@@ -268,11 +282,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                   decoration: const InputDecoration(
                                     labelText: 'Email',
                                     hintText: 'nama@email.com',
-                                    prefixIcon: Icon(Icons.mail_outline, size: 20),
+                                    prefixIcon:
+                                        Icon(Icons.mail_outline, size: 20),
                                   ),
                                   validator: (v) {
                                     final value = v?.trim() ?? '';
-                                    if (value.isEmpty) return 'Email jangan kosong';
+                                    if (value.isEmpty) {
+                                      return 'Email jangan kosong';
+                                    }
                                     if (!value.contains('@') ||
                                         !value.contains('.')) {
                                       return 'Format email belum benar';
@@ -293,9 +310,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                   decoration: InputDecoration(
                                     labelText: 'Password',
                                     hintText: 'minimal 6 karakter',
-                                    prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                                    prefixIcon: const Icon(Icons.lock_outline,
+                                        size: 20),
                                     suffixIcon: IconButton(
-                                      tooltip: _obscurePass ? 'Tampilkan password' : 'Sembunyikan password',
+                                      tooltip: _obscurePass
+                                          ? 'Tampilkan password'
+                                          : 'Sembunyikan password',
                                       icon: Icon(
                                         _obscurePass
                                             ? Icons.visibility_off
@@ -324,7 +344,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                       ),
                                       onPressed: _busy
                                           ? null
-                                          : () => _showForgotPasswordDialog(context),
+                                          : () => _showForgotPasswordDialog(
+                                              context),
                                       child: const Text(
                                         'Lupa password?',
                                         style: TextStyle(
@@ -346,9 +367,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                     decoration: InputDecoration(
                                       labelText: 'Konfirmasi Password',
                                       hintText: 'ulangi password',
-                                      prefixIcon: const Icon(Icons.lock_clock_outlined, size: 20),
+                                      prefixIcon: const Icon(
+                                          Icons.lock_clock_outlined,
+                                          size: 20),
                                       suffixIcon: IconButton(
-                                        tooltip: _obscureConfirmPass ? 'Tampilkan password' : 'Sembunyikan password',
+                                        tooltip: _obscureConfirmPass
+                                            ? 'Tampilkan password'
+                                            : 'Sembunyikan password',
                                         icon: Icon(
                                           _obscureConfirmPass
                                               ? Icons.visibility_off
@@ -362,8 +387,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                       ),
                                     ),
                                     validator: (v) {
-                                      if ((v ?? '').isEmpty) return 'Konfirmasi password jangan kosong';
-                                      if (v != _pass.text) return 'Konfirmasi password harus sama';
+                                      if ((v ?? '').isEmpty) {
+                                        return 'Konfirmasi password jangan kosong';
+                                      }
+                                      if (v != _pass.text) {
+                                        return 'Konfirmasi password harus sama';
+                                      }
                                       return null;
                                     },
                                   ),
@@ -475,8 +504,8 @@ class _AccountCardScreen extends ConsumerWidget {
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient:
-                        LinearGradient(colors: [AppTheme.accent, AppTheme.skyDeep]),
+                    gradient: LinearGradient(
+                        colors: [AppTheme.accent, AppTheme.skyDeep]),
                   ),
                   child: Text(
                     auth.displayName.isEmpty
@@ -544,7 +573,8 @@ class _AccountCardScreen extends ConsumerWidget {
                       Navigator.of(context).pop();
                     }
                   },
-                  icon: const Icon(Icons.logout, color: AppTheme.danger, size: 18),
+                  icon: const Icon(Icons.logout,
+                      color: AppTheme.danger, size: 18),
                   label: const Text('Keluar akun',
                       style: TextStyle(color: AppTheme.danger)),
                 ),

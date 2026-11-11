@@ -180,15 +180,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           final creditPill = Align(
             alignment: Alignment.center,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(999),
               ),
               child: Text(base.credit,
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey.shade300)),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade300)),
             ),
           );
           return Stack(
@@ -246,42 +244,51 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           point: LatLng(c.lat, c.lon),
                           width: 64,
                           height: 48,
-                          child: Semantics(button: true, label: '${c.placeName}, AQI ${c.usAqi}', child: GestureDetector(
-                            onTap: () => _openFav(
-                              context,
-                              FavoritePlace(
-                                id: 'city-${c.lat.toStringAsFixed(2)}-${c.lon.toStringAsFixed(2)}',
-                                name: c.placeName,
-                                lat: c.lat,
-                                lon: c.lon,
-                                lastAqi: c.usAqi,
-                              ),
-                            ),
-                            child: _AqiBadge(
-                              aqi: c.usAqi,
-                              small: true,
-                            ),
-                          )),
+                          child: Semantics(
+                              button: true,
+                              label: '${c.placeName}, AQI ${c.usAqi}',
+                              child: GestureDetector(
+                                onTap: () => _openFav(
+                                  context,
+                                  FavoritePlace(
+                                    id: 'city-${c.lat.toStringAsFixed(2)}-${c.lon.toStringAsFixed(2)}',
+                                    name: c.placeName,
+                                    lat: c.lat,
+                                    lon: c.lon,
+                                    lastAqi: c.usAqi,
+                                  ),
+                                ),
+                                child: _AqiBadge(
+                                  aqi: c.usAqi,
+                                  small: true,
+                                ),
+                              )),
                         ),
                       ...favs.map((p) => Marker(
                             point: LatLng(p.lat, p.lon),
                             width: 44,
                             height: 44,
-                            child: Semantics(button: true, label: 'Favorit ${p.name}', child: GestureDetector(
-                              onTap: () => _openFav(context, p),
-                              child: const Icon(Icons.location_on,
-                                  color: AppTheme.textMuted, size: 34),
-                            )),
+                            child: Semantics(
+                                button: true,
+                                label: 'Favorit ${p.name}',
+                                child: GestureDetector(
+                                  onTap: () => _openFav(context, p),
+                                  child: const Icon(Icons.location_on,
+                                      color: AppTheme.textMuted, size: 34),
+                                )),
                           )),
                       for (final report in reportEntries)
                         Marker(
                           point: LatLng(report.lat!, report.lon!),
                           width: 52,
                           height: 58,
-                          child: Semantics(button: true, label: 'Laporan komunitas di peta', child: GestureDetector(
-                            onTap: () => _openReport(context, report),
-                            child: _ReportPin(report: report),
-                          )),
+                          child: Semantics(
+                              button: true,
+                              label: 'Laporan komunitas di peta',
+                              child: GestureDetector(
+                                onTap: () => _openReport(context, report),
+                                child: _ReportPin(report: report),
+                              )),
                         ),
                       if (_probe != null)
                         Marker(
@@ -322,11 +329,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   left: 12,
                   right: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppTheme.nightSurface
-                          .withValues(alpha: 0.92),
+                      color: AppTheme.nightSurface.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                           color: AppTheme.dangerSoft.withValues(alpha: 0.6)),
@@ -351,16 +357,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   children: [
                     _MapFab(
                       icon: Icons.add,
+                      tooltip: 'Perbesar peta',
                       onTap: () => _zoom(1),
                     ),
                     const SizedBox(height: 6),
                     _MapFab(
                       icon: Icons.remove,
+                      tooltip: 'Perkecil peta',
                       onTap: () => _zoom(-1),
                     ),
                     const SizedBox(height: 6),
                     _MapFab(
                       icon: Icons.my_location,
+                      tooltip: 'Kembali ke titik tengah',
                       onTap: () => _recenterTo(center, zoomIn: true),
                     ),
                   ],
@@ -672,25 +681,35 @@ class _GlassStack extends StatelessWidget {
 
 class _MapFab extends StatelessWidget {
   final IconData icon;
+  final String tooltip;
   final VoidCallback onTap;
-  const _MapFab({required this.icon, required this.onTap});
+  const _MapFab({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black.withValues(alpha: 0.45),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
+    // Golden Rule 3: kontrol ikon tanpa teks wajib punya tooltip supaya
+    // fungsi tombolnya jelas bagi pengguna baru maupun screen reader.
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(14),
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+            ),
+            child: Icon(icon, size: 20, color: AppTheme.textPrimary),
           ),
-          child: Icon(icon, size: 20, color: AppTheme.textPrimary),
         ),
       ),
     );
@@ -1007,7 +1026,8 @@ class _CurrentHud extends StatelessWidget {
                   icon: const Icon(Icons.push_pin_outlined, size: 16),
                   label: const Text('Jadikan Beranda',
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 12)),
+                      style:
+                          TextStyle(color: AppTheme.textPrimary, fontSize: 12)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     side:
@@ -1155,8 +1175,8 @@ class _ProbeHud extends ConsumerWidget {
                     icon: const Icon(Icons.push_pin_outlined, size: 16),
                     label: const Text('Jadikan Beranda',
                         overflow: TextOverflow.ellipsis,
-                        style:
-                            TextStyle(color: AppTheme.textPrimary, fontSize: 12)),
+                        style: TextStyle(
+                            color: AppTheme.textPrimary, fontSize: 12)),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       side: BorderSide(
