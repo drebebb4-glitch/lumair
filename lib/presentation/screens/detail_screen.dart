@@ -89,7 +89,7 @@ class DetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final aqiColor = AqiHelper.color(reading.usAqi);
     return Scaffold(
-      backgroundColor: const Color(0xFF070B14),
+      backgroundColor: AppTheme.night,
       appBar: AppBar(title: Text('Detail • ${reading.placeName}')),
       // Layout responsif (orientation): portrait → ringkasan di atas,
       // kartu polutan menyusul ke bawah. Landscape → ringkasan nempel
@@ -188,7 +188,7 @@ class DetailScreen extends StatelessWidget {
             Text(
                 'AQI ${reading.usAqi} — ${AqiHelper.category(reading.usAqi)}',
                 style: const TextStyle(
-                    color: Color(0xFFE2E8F0),
+                    color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: 15)),
             const SizedBox(height: AppSpacing.sm),
@@ -203,7 +203,7 @@ class DetailScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(AqiHelper.advice(reading.usAqi),
                 style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                    color: AppTheme.textMuted,
                     fontSize: 12.5,
                     height: 1.45)),
           ],
@@ -219,21 +219,21 @@ class DetailScreen extends StatelessWidget {
         ),
         child: Text('Dominan: ${AqiHelper.dominantLabel(reading.dominant)}',
             style: TextStyle(
-                color: aqiColor, fontSize: 11, fontWeight: FontWeight.w700)),
+                color: aqiColor, fontSize: 12, fontWeight: FontWeight.w700)),
       );
 
   Widget _miniChip() => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: const Color(0xFF94A3B8).withValues(alpha: 0.14),
+          color: AppTheme.textMuted.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
-              color: const Color(0xFF94A3B8).withValues(alpha: 0.40)),
+              color: AppTheme.textMuted.withValues(alpha: 0.40)),
         ),
         child: const Text('offline',
             style: TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 11,
+                color: AppTheme.textMuted,
+                fontSize: 12,
                 fontWeight: FontWeight.w600)),
       );
 
@@ -247,12 +247,12 @@ class DetailScreen extends StatelessWidget {
           ? const Row(
               children: [
                 Icon(Icons.verified_outlined,
-                    size: 16, color: Color(0xFF34D399)),
+                    size: 16, color: AppTheme.accent),
                 SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text('Semua polutan masih dalam batas aman',
                       style: TextStyle(
-                          color: Color(0xFF94A3B8),
+                          color: AppTheme.textMuted,
                           fontSize: 12.5,
                           height: 1.4)),
                 ),
@@ -263,11 +263,11 @@ class DetailScreen extends StatelessWidget {
               children: [
                 const Row(children: [
                   Icon(Icons.warning_amber_rounded,
-                      size: 16, color: Color(0xFFF87171)),
+                      size: 16, color: AppTheme.dangerSoft),
                   SizedBox(width: AppSpacing.sm),
                   Text('Melebihi batas aman',
                       style: TextStyle(
-                          color: Color(0xFFE2E8F0),
+                          color: AppTheme.textPrimary,
                           fontWeight: FontWeight.w700,
                           fontSize: 13)),
                 ]),
@@ -280,7 +280,7 @@ class DetailScreen extends StatelessWidget {
                         width: 8,
                         height: 8,
                         decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444), shape: BoxShape.circle),
+                            color: AppTheme.danger, shape: BoxShape.circle),
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
@@ -288,12 +288,12 @@ class DetailScreen extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  color: Color(0xFFE2E8F0), fontSize: 12.5))),
+                                  color: AppTheme.textPrimary, fontSize: 12.5))),
                       Text(
                           '${(p.value / p.warnAt).toStringAsFixed(1)}× batas',
                           style: const TextStyle(
-                              color: Color(0xFFF87171),
-                              fontSize: 11.5,
+                              color: AppTheme.dangerSoft,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700)),
                     ]),
                   ),
@@ -305,7 +305,7 @@ class DetailScreen extends StatelessWidget {
   Widget _pollutantCard(_PollutantInfo p, Color aqiColor) {
     final over = p.value >= p.warnAt;
     final ratio = (p.value / p.warnAt).clamp(0.05, 1.0);
-    final barColor = over ? const Color(0xFFEF4444) : const Color(0xFF10B981);
+    final barColor = over ? AppTheme.danger : AppTheme.emerald;
     final isDominant = reading.dominant == p.key;
     return GlassCard(
       radius: 20,
@@ -329,7 +329,7 @@ class DetailScreen extends StatelessWidget {
               Expanded(
                 child: Text(p.name,
                     style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
+                        color: AppTheme.textPrimary,
                         fontWeight: FontWeight.w600)),
               ),
               if (isDominant)
@@ -350,7 +350,7 @@ class DetailScreen extends StatelessWidget {
                       Text('DOMINAN',
                           style: TextStyle(
                               color: aqiColor,
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1)),
                     ],
@@ -368,25 +368,25 @@ class DetailScreen extends StatelessWidget {
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
                       color: over
-                          ? const Color(0xFFF87171)
-                          : const Color(0xFFE2E8F0))),
+                          ? AppTheme.dangerSoft
+                          : AppTheme.textPrimary)),
               const SizedBox(width: 6),
               Text(p.unit,
                   style: const TextStyle(
-                      color: Color(0xFF94A3B8), fontSize: 12)),
+                      color: AppTheme.textMuted, fontSize: 12)),
               const Spacer(),
               if (over)
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                    color: AppTheme.danger.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: const Text('melebihi batas',
                       style: TextStyle(
-                          color: Color(0xFFF87171),
-                          fontSize: 10,
+                          color: AppTheme.dangerSoft,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700)),
                 ),
             ],
@@ -430,12 +430,12 @@ class DetailScreen extends StatelessWidget {
               Text('Batas aman',
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.45),
-                      fontSize: 11.5)),
+                      fontSize: 12)),
               const Spacer(),
               Text('${p.warnAt.toStringAsFixed(0)} ${p.unit}',
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.65),
-                      fontSize: 11.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600)),
               if (over) ...[
                 const SizedBox(width: 8),
@@ -443,15 +443,15 @@ class DetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444)
+                    color: AppTheme.danger
                         .withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                       '${(p.value / p.warnAt).toStringAsFixed(1)}× batas',
                       style: const TextStyle(
-                          color: Color(0xFFF87171),
-                          fontSize: 10,
+                          color: AppTheme.dangerSoft,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700)),
                 ),
               ],

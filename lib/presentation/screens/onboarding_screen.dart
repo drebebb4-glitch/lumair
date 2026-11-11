@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_theme.dart';
 
 /// Onboarding 3 slide — tampil sekali (flag di SharedPreferences).
 /// Konten compact supaya aman di viewport test (600px) & HP kecil.
@@ -17,21 +18,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   static const _slides = [
     (
       icon: Icons.air,
-      colors: [Color(0xFF34D399), Color(0xFF0EA5E9)],
+      colors: [AppTheme.accent, AppTheme.skyDeep],
       title: 'Kenal udara lu',
       body:
           'LUMAIR menunjukkan kualitas udara di sekitar lu — AQI, polutan utama, dan rekomendasi kesehatan, langsung jelas dalam hitungan detik.',
     ),
     (
       icon: Icons.my_location,
-      colors: [Color(0xFF38BDF8), Color(0xFF818CF8)],
+      colors: [AppTheme.sky, Color(0xFF818CF8)],
       title: 'Izin lokasi',
       body:
           'Biar angkanya akurat, izinkan akses lokasi. Kalau ditolak, LUMAIR memakai Jakarta sebagai contoh — dan lu tetap bisa ganti kota kapan aja.',
     ),
     (
       icon: Icons.speed,
-      colors: [Color(0xFFFBBF24), Color(0xFFF97316)],
+      colors: [AppTheme.warning, Color(0xFFF97316)],
       title: 'Cara bacanya',
       body:
           'Semua angka dijelaskan: skala AQI 0–500, batas aman tiap polutan, dan status aktivitas (aman/waspada/hindari). Tarik ke bawah untuk refresh data.',
@@ -64,7 +65,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B14),
+      backgroundColor: AppTheme.night,
       body: SafeArea(
         child: Column(
           children: [
@@ -75,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 child: TextButton(
                   onPressed: widget.onDone,
                   child: const Text('Lewati',
-                      style: TextStyle(color: Color(0xFF94A3B8))),
+                      style: TextStyle(color: AppTheme.textMuted)),
                 ),
               ),
             ),
@@ -125,7 +126,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Text(s.title,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                                color: Color(0xFFE2E8F0),
+                                color: AppTheme.textPrimary,
                                 fontSize: 24,
                                 fontWeight: FontWeight.w800)),
                         const SizedBox(height: 12),
@@ -159,13 +160,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Icon(f.$1,
-                                        color: const Color(0xFF34D399),
+                                        color: AppTheme.accent,
                                         size: 17),
                                   ),
                                   const SizedBox(width: 10),
                                   Text(f.$2,
                                       style: const TextStyle(
-                                          color: Color(0xFFE2E8F0),
+                                          color: AppTheme.textPrimary,
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13.5)),
                                   const SizedBox(width: 8),
@@ -198,7 +199,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       margin: const EdgeInsets.only(right: 6),
                       decoration: BoxDecoration(
                         color: i == _index
-                            ? const Color(0xFF34D399)
+                            ? AppTheme.accent
                             : Colors.white.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(999),
                       ),

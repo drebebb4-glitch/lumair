@@ -36,7 +36,7 @@ class AqiScaleStrip extends StatelessWidget {
             child: Text('$aqi',
                 style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800)),
           ),
         ),
@@ -61,15 +61,15 @@ class AqiScaleStrip extends StatelessWidget {
           children: [
             Text('0',
                 style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.45))),
             Text('skala US AQI 0–500',
                 style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.45))),
             Text('500',
                 style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 12,
                     color: Colors.white.withValues(alpha: 0.45))),
           ],
         ),

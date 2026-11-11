@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/app_theme.dart';
 
 /// Kartu "Aktivitas" ala app cuaca: 3 kelompok aktor dengan status
 /// Aman / Waspada / Hindari berdasar US AQI.
@@ -8,12 +9,12 @@ class ActivityCard extends StatelessWidget {
 
   ({String label, Color color, IconData icon}) _status(int aqi) {
     if (aqi <= 100) {
-      return (label: 'Aman', color: const Color(0xFF34D399), icon: Icons.check_circle_outline);
+      return (label: 'Aman', color: AppTheme.accent, icon: Icons.check_circle_outline);
     }
     if (aqi <= 150) {
-      return (label: 'Waspada', color: const Color(0xFFFBBF24), icon: Icons.warning_amber_outlined);
+      return (label: 'Waspada', color: AppTheme.warning, icon: Icons.warning_amber_outlined);
     }
-    return (label: 'Hindari', color: const Color(0xFFF87171), icon: Icons.block_outlined);
+    return (label: 'Hindari', color: AppTheme.dangerSoft, icon: Icons.block_outlined);
   }
 
   @override
@@ -48,7 +49,7 @@ class ActivityCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(title,
               style: const TextStyle(
-                  color: Color(0xFFE2E8F0),
+                  color: AppTheme.textPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 3),
@@ -60,7 +61,7 @@ class ActivityCard extends StatelessWidget {
               Text(s.label,
                   style: TextStyle(
                       color: s.color,
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700)),
             ],
           ),
@@ -71,7 +72,7 @@ class ActivityCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.45),
-                  fontSize: 9.5,
+                  fontSize: 12,
                   height: 1.2)),
         ],
       ),

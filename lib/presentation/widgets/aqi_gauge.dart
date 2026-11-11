@@ -48,7 +48,10 @@ class _AqiGaugeState extends State<AqiGauge> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final eased = CurvedAnimation(parent: _sweep, curve: Curves.easeOutCubic);
-    return SizedBox(
+    return Semantics(
+      label: 'Indeks kualitas udara ${widget.aqi}',
+      child: ExcludeSemantics(
+        child: SizedBox(
       width: widget.size,
       height: widget.size,
       child: AnimatedBuilder(
@@ -86,6 +89,8 @@ class _AqiGaugeState extends State<AqiGauge> with TickerProviderStateMixin {
             ),
           );
         },
+      ),
+        ),
       ),
     );
   }

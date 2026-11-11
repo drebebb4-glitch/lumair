@@ -8,6 +8,7 @@ import '../../domain/models/air_quality.dart';
 import '../../domain/providers.dart';
 import '../widgets/glass.dart';
 import 'detail_screen.dart';
+import '../../core/app_theme.dart';
 
 /// Favorit 2.2
 /// - Potret: Kota tersimpan -> Cari kota -> Jelajah.
@@ -204,7 +205,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                 const Text(
                   'Belum ada kota tersimpan',
                   style: TextStyle(
-                    color: Color(0xFFE2E8F0),
+                    color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -302,7 +303,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             child: Text(
               _error!,
               style: const TextStyle(
-                color: Color(0xFFF87171),
+                color: AppTheme.dangerSoft,
                 fontSize: 12.5,
               ),
             ),
@@ -325,9 +326,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
               trailing: saved
                   ? const Icon(
                       Icons.check,
-                      color: Color(0xFF34D399),
+                      color: AppTheme.accent,
                     )
                   : IconButton(
+                      tooltip: 'Tambah ke favorit',
                       icon: const Icon(Icons.add),
                       onPressed: () => _addOrNotice(
                         context,
@@ -372,7 +374,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
       title: const Text(
         'Jelajah 20 kota besar',
         style: TextStyle(
-          color: Color(0xFFE2E8F0),
+          color: AppTheme.textPrimary,
           fontWeight: FontWeight.w700,
           fontSize: 15,
         ),
@@ -403,6 +405,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
             leading: const Icon(Icons.cloud_off_outlined),
             title: const Text('Gagal memuat (offline)'),
             trailing: IconButton(
+              tooltip: 'Muat ulang daftar kota',
               icon: const Icon(Icons.refresh),
               onPressed: () {
                 ref.invalidate(allCitiesProvider);
@@ -445,7 +448,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                 title: Text(
                   r.placeName,
                   style: const TextStyle(
-                    color: Color(0xFFE2E8F0),
+                    color: AppTheme.textPrimary,
                     fontSize: 14,
                   ),
                 ),
@@ -461,9 +464,10 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                 trailing: saved
                     ? const Icon(
                         Icons.check,
-                        color: Color(0xFF34D399),
+                        color: AppTheme.accent,
                       )
                     : IconButton(
+                        tooltip: 'Tambah ke favorit',
                         icon: const Icon(Icons.add),
                         onPressed: () => _addOrNotice(
                           context,
@@ -608,7 +612,7 @@ Widget _sectionTitle(String title, String hint) {
       Text(
         title,
         style: const TextStyle(
-          color: Color(0xFFE2E8F0),
+          color: AppTheme.textPrimary,
           fontWeight: FontWeight.w700,
           fontSize: 16,
         ),
@@ -618,7 +622,7 @@ Widget _sectionTitle(String title, String hint) {
         hint,
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.4),
-          fontSize: 11.5,
+          fontSize: 12,
         ),
       ),
     ],
@@ -745,7 +749,7 @@ class _CityRowCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
+                        color: AppTheme.textPrimary,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -780,6 +784,25 @@ class _CityRowCard extends StatelessWidget {
 // TILE KOTA FAVORIT
 // ================================================================
 
+/// Hapus favorit + SnackBar dengan aksi "Urungkan" (Golden Rule 6).
+void _removeWithUndo(BuildContext context, WidgetRef ref, FavoritePlace place) {
+  final notifier = ref.read(favoritesProvider.notifier);
+  final index = notifier.indexOf(place.id);
+  notifier.remove(place.id);
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text('${place.name} dihapus dari favorit.'),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Urungkan',
+          onPressed: () => notifier.restore(place, index < 0 ? 0 : index),
+        ),
+      ),
+    );
+}
+
 class _FavTile extends ConsumerWidget {
   final FavoritePlace place;
 
@@ -812,9 +835,10 @@ class _FavTile extends ConsumerWidget {
         title: place.name,
         subtitle: 'Gagal memuat',
         trailing: IconButton(
+          tooltip: 'Hapus ${place.name} dari favorit',
           icon: const Icon(Icons.delete_outline),
           onPressed: () {
-            ref.read(favoritesProvider.notifier).remove(place.id);
+            _removeWithUndo(context, ref, place);
           },
         ),
       ),
@@ -836,13 +860,14 @@ class _FavTile extends ConsumerWidget {
           subtitleColor: c,
 
           trailing: IconButton(
+            tooltip: 'Hapus ${place.name} dari favorit',
             icon: const Icon(
               Icons.delete_outline,
-              color: Color(0xFF94A3B8),
+              color: AppTheme.textMuted,
               size: 20,
             ),
             onPressed: () {
-              ref.read(favoritesProvider.notifier).remove(place.id);
+              _removeWithUndo(context, ref, place);
             },
           ),
 

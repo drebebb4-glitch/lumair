@@ -12,6 +12,7 @@ import '../widgets/activity_card.dart';
 import 'detail_screen.dart';
 import 'forecast_screen.dart';
 import 'map_screen.dart';
+import '../../core/app_theme.dart';
 
 /// Beranda LUMAIR 2.0 — pola app modern: hero AQI + skala + aktivitas
 /// + banner status + quick actions ke semua fitur.
@@ -41,10 +42,10 @@ class HomeScreen extends ConsumerWidget {
         final now = DateTime.now();
         final age = now.difference(r.time);
         final status = r.fromCache
-            ? (label: 'Offline', color: const Color(0xFF38BDF8))
+            ? (label: 'Offline', color: AppTheme.sky)
             : age >= const Duration(hours: 1)
-                ? (label: 'Data lama', color: const Color(0xFFFBBF24))
-                : (label: 'Live', color: const Color(0xFF34D399));
+                ? (label: 'Data lama', color: AppTheme.warning)
+                : (label: 'Live', color: AppTheme.accent);
         final pollutants = _rankPollutants(r);
         final forecast = ref.watch(forecastProvider).maybeWhen(
               data: (points) => points
@@ -62,7 +63,7 @@ class HomeScreen extends ConsumerWidget {
                   accent: color, severity: AqiHelper.severity(r.usAqi)),
               RefreshIndicator(
                 color: Colors.white,
-                backgroundColor: const Color(0xFF0B1220),
+                backgroundColor: AppTheme.nightSurface,
                 onRefresh: () async {
                   ref.invalidate(locationProvider);
                   await ref.read(aqiProvider.future);
@@ -74,7 +75,7 @@ class HomeScreen extends ConsumerWidget {
                     if (gpsFallback)
                       _StatusBanner(
                         icon: Icons.location_city_outlined,
-                        color: const Color(0xFFFBBF24),
+                        color: AppTheme.warning,
                         text: 'Akses GPS gak aktif — lokasi contoh: '
                             '${r.placeName}. Tap nama lokasi untuk memilih kota.',
                       ),
@@ -82,7 +83,7 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(height: 8),
                       const _StatusBanner(
                         icon: Icons.cloud_off_outlined,
-                        color: Color(0xFF38BDF8),
+                        color: AppTheme.sky,
                         text:
                             'Data langsung tidak tersedia. Angka ini data contoh, bukan data tersimpan.',
                       ),
@@ -103,6 +104,9 @@ class HomeScreen extends ConsumerWidget {
                           Row(
                             children: [
                               Expanded(
+                                child: Semantics(
+                                  button: true,
+                                  label: 'Ganti lokasi',
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(12),
                                   onTap: () => showLocationPickerSheet(context),
@@ -112,7 +116,7 @@ class HomeScreen extends ConsumerWidget {
                                     child: Row(
                                       children: [
                                         const Icon(Icons.location_on_outlined,
-                                            size: 20, color: Color(0xFFE2E8F0)),
+                                            size: 20, color: AppTheme.textPrimary),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
@@ -120,7 +124,7 @@ class HomeScreen extends ConsumerWidget {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
-                                              color: Color(0xFFE2E8F0),
+                                              color: AppTheme.textPrimary,
                                               fontWeight: FontWeight.w700,
                                               fontSize: 17,
                                             ),
@@ -133,7 +137,7 @@ class HomeScreen extends ConsumerWidget {
                                       ],
                                     ),
                                   ),
-                                ),
+                                )),
                               ),
                               const SizedBox(width: 8),
                               const _AqiHelpButton(),
@@ -194,7 +198,7 @@ class HomeScreen extends ConsumerWidget {
                                     Text(
                                       AqiHelper.headline(r.usAqi),
                                       style: const TextStyle(
-                                        color: Color(0xFFE2E8F0),
+                                        color: AppTheme.textPrimary,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
                                         height: 1.3,
@@ -209,8 +213,10 @@ class HomeScreen extends ConsumerWidget {
                           Center(child: AqiGauge(aqi: r.usAqi, color: color)),
                           const SizedBox(height: 4),
                           MediaQuery(
+                            // Hormati pengaturan ukuran font sistem pengguna.
                             data: MediaQuery.of(context).copyWith(
-                              textScaler: const TextScaler.linear(1.2),
+                              textScaler: TextScaler.linear(
+                                  MediaQuery.textScalerOf(context).scale(1.2)),
                             ),
                             child: AqiScaleStrip(aqi: r.usAqi),
                           ),
@@ -294,21 +300,21 @@ class HomeScreen extends ConsumerWidget {
                                   children: [
                                     Icon(pollutant.icon,
                                         size: 20,
-                                        color: const Color(0xFFCBD5E1)),
+                                        color: AppTheme.textSoft),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
                                           AqiHelper.dominantLabel(
                                               pollutant.key),
                                           style: const TextStyle(
-                                              color: Color(0xFFE2E8F0),
+                                              color: AppTheme.textPrimary,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600)),
                                     ),
                                     Text(
                                       '${_formatPollutant(pollutant.value)} ${pollutant.unit}',
                                       style: const TextStyle(
-                                          color: Color(0xFFE2E8F0),
+                                          color: AppTheme.textPrimary,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700),
                                     ),
@@ -338,7 +344,7 @@ class HomeScreen extends ConsumerWidget {
                                       child: _sectionLabel(
                                           'PRAKIRAAN BEBERAPA JAM KE DEPAN')),
                                   const Icon(Icons.arrow_forward,
-                                      color: Color(0xFFCBD5E1), size: 18),
+                                      color: AppTheme.textSoft, size: 18),
                                 ],
                               ),
                               const SizedBox(height: 10),
@@ -370,7 +376,7 @@ class HomeScreen extends ConsumerWidget {
                                         children: [
                                           Text(_clockTime(point.time),
                                               style: const TextStyle(
-                                                  color: Color(0xFFCBD5E1),
+                                                  color: AppTheme.textSoft,
                                                   fontSize: 12)),
                                           const SizedBox(height: 4),
                                           Text('AQI ${point.aqi}',
@@ -423,7 +429,7 @@ class HomeScreen extends ConsumerWidget {
                                 Text(
                                   AqiHelper.advice(r.usAqi),
                                   style: const TextStyle(
-                                    color: Color(0xFFE2E8F0),
+                                    color: AppTheme.textPrimary,
                                     fontSize: 13.5,
                                     height: 1.35,
                                   ),
@@ -443,7 +449,8 @@ class HomeScreen extends ConsumerWidget {
                           const SizedBox(height: 10),
                           MediaQuery(
                             data: MediaQuery.of(context).copyWith(
-                              textScaler: const TextScaler.linear(1.27),
+                              textScaler: TextScaler.linear(
+                                  MediaQuery.textScalerOf(context).scale(1.27)),
                             ),
                             child: ActivityCard(aqi: r.usAqi),
                           ),
@@ -457,7 +464,7 @@ class HomeScreen extends ConsumerWidget {
                         icon: Icons.map_outlined,
                         label: 'Peta',
                         sub: 'Zona AQI kota',
-                        color: const Color(0xFF38BDF8),
+                        color: AppTheme.sky,
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -603,7 +610,7 @@ class _WeatherValue extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(value,
                     style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
+                        color: AppTheme.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w800)),
               ],
@@ -664,7 +671,7 @@ void showAqiHelpSheet(BuildContext context) {
   ];
   showModalBottomSheet(
     context: context,
-    backgroundColor: const Color(0xFF0B1220),
+    backgroundColor: AppTheme.nightSurface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -676,7 +683,7 @@ void showAqiHelpSheet(BuildContext context) {
         children: [
           const Text('Apa itu AQI?',
               style: TextStyle(
-                  color: Color(0xFFE2E8F0),
+                  color: AppTheme.textPrimary,
                   fontWeight: FontWeight.w800,
                   fontSize: 18)),
           const SizedBox(height: 8),
@@ -716,7 +723,7 @@ void showAqiHelpSheet(BuildContext context) {
                   Expanded(
                     child: Text(r.$2,
                         style: const TextStyle(
-                            color: Color(0xFFE2E8F0), fontSize: 13)),
+                            color: AppTheme.textPrimary, fontSize: 13)),
                   ),
                 ],
               ),
@@ -732,7 +739,7 @@ void showLocationPickerSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: const Color(0xFF0B1220),
+    backgroundColor: AppTheme.nightSurface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -790,7 +797,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
           children: [
             const Text('Pilih Lokasi Beranda',
                 style: TextStyle(
-                    color: Color(0xFFE2E8F0),
+                    color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w800,
                     fontSize: 18)),
             const SizedBox(height: 6),
@@ -805,12 +812,12 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
             Container(
               decoration: BoxDecoration(
                 color: override == null
-                    ? const Color(0xFF34D399).withValues(alpha: 0.10)
+                    ? AppTheme.accent.withValues(alpha: 0.10)
                     : Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                     color: override == null
-                        ? const Color(0xFF34D399).withValues(alpha: 0.5)
+                        ? AppTheme.accent.withValues(alpha: 0.5)
                         : Colors.white.withValues(alpha: 0.10)),
               ),
               child: ListTile(
@@ -820,8 +827,8 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                         ? Icons.location_city_outlined
                         : Icons.gps_fixed,
                     color: override == null
-                        ? const Color(0xFF34D399)
-                        : const Color(0xFF94A3B8),
+                        ? AppTheme.accent
+                        : AppTheme.textMuted,
                   ),
                   orElse: () => const SizedBox(
                     width: 18,
@@ -836,7 +843,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                   ),
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      color: Color(0xFFE2E8F0),
+                      color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 14.5),
                 ),
@@ -853,7 +860,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                 ),
                 trailing: override == null
                     ? const Icon(Icons.check_circle,
-                        color: Color(0xFF34D399), size: 20)
+                        color: AppTheme.accent, size: 20)
                     : TextButton(
                         onPressed: () {
                           ref.read(homeLocationProvider.notifier).clear();
@@ -861,7 +868,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                         },
                         child: const Text('Pakai ini',
                             style: TextStyle(
-                                color: Color(0xFF34D399),
+                                color: AppTheme.accent,
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700)),
                       ),
@@ -912,14 +919,14 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                     return ListTile(
                       dense: true,
                       leading: const Icon(Icons.place_outlined,
-                          size: 20, color: Color(0xFF94A3B8)),
+                          size: 20, color: AppTheme.textMuted),
                       title: Text(p.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 13.5)),
                       trailing: selected
                           ? const Icon(Icons.check_circle,
-                              color: Color(0xFF34D399), size: 18)
+                              color: AppTheme.accent, size: 18)
                           : null,
                       onTap: () => _pick(p),
                     );
@@ -962,7 +969,7 @@ class _LocationPickerSheetState extends ConsumerState<_LocationPickerSheet> {
                           ),
                           child: Text(c.name,
                               style: const TextStyle(
-                                  color: Color(0xFFE2E8F0),
+                                  color: AppTheme.textPrimary,
                                   fontSize: 12.5,
                                   fontWeight: FontWeight.w600)),
                         ),
@@ -1001,7 +1008,7 @@ class _StatusBanner extends StatelessWidget {
           Expanded(
             child: Text(text,
                 style: const TextStyle(
-                    color: Color(0xFFE2E8F0), fontSize: 12.5, height: 1.3)),
+                    color: AppTheme.textPrimary, fontSize: 12.5, height: 1.3)),
           ),
         ],
       ),
@@ -1051,7 +1058,7 @@ class _QuickAction extends StatelessWidget {
               const SizedBox(height: 8),
               Text(label,
                   style: const TextStyle(
-                      color: Color(0xFFE2E8F0),
+                      color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 13)),
               const SizedBox(height: 2),
@@ -1078,7 +1085,7 @@ class _StaticShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B14),
+      backgroundColor: AppTheme.night,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -1173,17 +1180,17 @@ class _ErrorCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(Icons.cloud_off_outlined,
-                color: Color(0xFFEF4444), size: 44),
+                color: AppTheme.danger, size: 44),
             const SizedBox(height: 12),
             const Text('Gagal memuat data udara',
                 style: TextStyle(
-                    color: Color(0xFFE2E8F0), fontWeight: FontWeight.w700)),
+                    color: AppTheme.textPrimary, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(message,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                style: const TextStyle(color: AppTheme.textMuted, fontSize: 12)),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: onRetry,

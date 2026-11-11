@@ -9,6 +9,18 @@ class AppTheme {
   static const night = Color(0xFF070B14); // latar gelap utama
   static const nightSurface = Color(0xFF0B1220); // navbar / panel
 
+  // Token warna bersama (Golden Rule 1: konsistensi) — jangan hardcode di layar.
+  static const textPrimary = Color(0xFFE2E8F0);
+  static const textSoft = Color(0xFFCBD5E1);
+  static const textMuted = Color(0xFF94A3B8);
+  static const textFaint = Color(0xFF64748B);
+  static const accent = Color(0xFF34D399); // emerald terang
+  static const sky = Color(0xFF38BDF8);
+  static const skyDeep = Color(0xFF0EA5E9);
+  static const danger = Color(0xFFEF4444);
+  static const dangerSoft = Color(0xFFF87171);
+  static const warning = Color(0xFFFBBF24);
+
   static ThemeData get dark {
     final scheme = ColorScheme.fromSeed(
       seedColor: emerald,
@@ -16,6 +28,9 @@ class AppTheme {
     );
     return ThemeData(
       useMaterial3: true,
+      // Area sentuh minimal 48dp (aksesibilitas).
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      visualDensity: VisualDensity.standard,
       colorScheme: scheme,
       scaffoldBackgroundColor: night,
       fontFamily: 'Plus Jakarta Sans',
@@ -123,7 +138,7 @@ class AppTextStyles {
   /// Heading kecil huruf kapital (label grup chips/bar).
   static const TextStyle sectionLabel = TextStyle(
       color: Color(0xFF94A3B8),
-      fontSize: 11,
+      fontSize: 12,
       fontWeight: FontWeight.w800,
       letterSpacing: 1.1,
       height: 1.4);
@@ -145,7 +160,7 @@ class AppTextStyles {
   /// Keterangan kecil (footer, catatan sumber).
   static const TextStyle caption = TextStyle(
       color: Color(0xFF94A3B8),
-      fontSize: 11,
+      fontSize: 12,
       fontWeight: FontWeight.w500,
       height: 1.4);
 }

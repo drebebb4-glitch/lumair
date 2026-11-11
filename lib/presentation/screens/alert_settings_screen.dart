@@ -290,7 +290,7 @@ class _AlertSettingsScreenState extends ConsumerState<AlertSettingsScreen> {
             ),
             Icon(
               selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? AppTheme.emerald : const Color(0xFF64748B),
+              color: selected ? AppTheme.emerald : AppTheme.textFaint,
             ),
           ],
         ),

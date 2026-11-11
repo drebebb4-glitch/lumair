@@ -239,6 +239,17 @@ class FavoritesNotifier extends StateNotifier<List<FavoritePlace>> {
     await _save();
   }
 
+  /// Mengembalikan favorit yang baru dihapus (dipakai tombol Urungkan).
+  Future<void> restore(FavoritePlace place, int index) async {
+    if (contains(place.id) || isFull) return;
+    final list = [...state];
+    list.insert(index.clamp(0, list.length), place);
+    state = list;
+    await _save();
+  }
+
+  int indexOf(String id) => state.indexWhere((p) => p.id == id);
+
   Future<void> remove(String id) async {
     state = state.where((p) => p.id != id).toList();
     await _save();

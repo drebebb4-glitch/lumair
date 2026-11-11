@@ -10,6 +10,7 @@ import '../../domain/report_provider.dart';
 import '../widgets/glass.dart';
 import 'detail_screen.dart';
 import 'report_detail_screen.dart';
+import '../../core/app_theme.dart';
 
 class _BaseMap {
   final String name;
@@ -187,7 +188,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
               child: Text(base.credit,
                   style: TextStyle(
-                      fontSize: 9.5, color: Colors.grey.shade300)),
+                      fontSize: 12, color: Colors.grey.shade300)),
             ),
           );
           return Stack(
@@ -245,7 +246,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                           point: LatLng(c.lat, c.lon),
                           width: 64,
                           height: 48,
-                          child: GestureDetector(
+                          child: Semantics(button: true, label: '${c.placeName}, AQI ${c.usAqi}', child: GestureDetector(
                             onTap: () => _openFav(
                               context,
                               FavoritePlace(
@@ -260,27 +261,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               aqi: c.usAqi,
                               small: true,
                             ),
-                          ),
+                          )),
                         ),
                       ...favs.map((p) => Marker(
                             point: LatLng(p.lat, p.lon),
                             width: 44,
                             height: 44,
-                            child: GestureDetector(
+                            child: Semantics(button: true, label: 'Favorit ${p.name}', child: GestureDetector(
                               onTap: () => _openFav(context, p),
                               child: const Icon(Icons.location_on,
-                                  color: Color(0xFF94A3B8), size: 34),
-                            ),
+                                  color: AppTheme.textMuted, size: 34),
+                            )),
                           )),
                       for (final report in reportEntries)
                         Marker(
                           point: LatLng(report.lat!, report.lon!),
                           width: 52,
                           height: 58,
-                          child: GestureDetector(
+                          child: Semantics(button: true, label: 'Laporan komunitas di peta', child: GestureDetector(
                             onTap: () => _openReport(context, report),
                             child: _ReportPin(report: report),
-                          ),
+                          )),
                         ),
                       if (_probe != null)
                         Marker(
@@ -324,11 +325,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0B1220)
+                      color: AppTheme.nightSurface
                           .withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: const Color(0xFFF87171).withValues(alpha: 0.6)),
+                          color: AppTheme.dangerSoft.withValues(alpha: 0.6)),
                     ),
                     child: Text(
                       'Laporan tidak dapat dimuat: ${reports.error}',
@@ -336,7 +337,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFFFECACA),
-                        fontSize: 11,
+                        fontSize: 12,
                       ),
                     ),
                   ),
@@ -454,7 +455,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   void _openFav(BuildContext context, FavoritePlace place) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0B1220),
+      backgroundColor: AppTheme.nightSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -466,7 +467,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           children: [
             Text(place.name,
                 style: const TextStyle(
-                    color: Color(0xFFE2E8F0),
+                    color: AppTheme.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 16)),
             const SizedBox(height: 8),
@@ -476,9 +477,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 return live.when(
                   loading: () => const Center(
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Color(0xFF34D399))),
+                          strokeWidth: 2, color: AppTheme.accent)),
                   error: (e, _) => Text('Gagal: $e',
-                      style: const TextStyle(color: Color(0xFF94A3B8))),
+                      style: const TextStyle(color: AppTheme.textMuted)),
                   data: (r) => ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
@@ -492,10 +493,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     title: Text(
                         'AQI ${r.usAqi} — ${AqiHelper.category(r.usAqi)}',
                         style: const TextStyle(
-                            color: Color(0xFFE2E8F0),
+                            color: AppTheme.textPrimary,
                             fontWeight: FontWeight.w600)),
                     subtitle: Text(AqiHelper.advice(r.usAqi),
-                        style: const TextStyle(color: Color(0xFF94A3B8))),
+                        style: const TextStyle(color: AppTheme.textMuted)),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -523,7 +524,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0B1220),
+      backgroundColor: AppTheme.nightSurface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -542,11 +543,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.search, color: Color(0xFF94A3B8)),
+                  Icon(Icons.search, color: AppTheme.textMuted),
                   SizedBox(width: 8),
                   Text('Cari kota',
                       style: TextStyle(
-                          color: Color(0xFFE2E8F0),
+                          color: AppTheme.textPrimary,
                           fontWeight: FontWeight.w700,
                           fontSize: 16)),
                 ],
@@ -587,26 +588,26 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                   padding: EdgeInsets.all(16),
                   child: Center(
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Color(0xFF34D399))),
+                          strokeWidth: 2, color: AppTheme.accent)),
                 ),
               if (error != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
                   child: Text(error!,
                       style: const TextStyle(
-                          color: Color(0xFFF87171), fontSize: 12.5)),
+                          color: AppTheme.dangerSoft, fontSize: 12.5)),
                 ),
               ...results.map((p) => ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.location_city_outlined,
-                        color: Color(0xFF94A3B8)),
+                        color: AppTheme.textMuted),
                     title: Text(p.name,
-                        style: const TextStyle(color: Color(0xFFE2E8F0))),
+                        style: const TextStyle(color: AppTheme.textPrimary)),
                     subtitle: Text(
                         '${p.lat.toStringAsFixed(2)}, ${p.lon.toStringAsFixed(2)}',
-                        style: const TextStyle(color: Color(0xFF64748B))),
+                        style: const TextStyle(color: AppTheme.textFaint)),
                     trailing: const Icon(Icons.chevron_right,
-                        color: Color(0xFF64748B)),
+                        color: AppTheme.textFaint),
                     onTap: () async {
                       Navigator.pop(sheetCtx);
                       try {
@@ -689,7 +690,7 @@ class _MapFab extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
           ),
-          child: Icon(icon, size: 20, color: const Color(0xFFE2E8F0)),
+          child: Icon(icon, size: 20, color: AppTheme.textPrimary),
         ),
       ),
     );
@@ -733,10 +734,10 @@ class _GlassPills extends StatelessWidget {
                 ),
                 child: Text(labels[i],
                     style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w700,
                         color: i == active
-                            ? const Color(0xFFE2E8F0)
+                            ? AppTheme.textPrimary
                             : Colors.grey.shade400)),
               ),
             ),
@@ -769,12 +770,12 @@ class _LegendPanel extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.format_list_bulleted,
-                          size: 13, color: Color(0xFF94A3B8)),
+                          size: 13, color: AppTheme.textMuted),
                       SizedBox(width: 5),
                       Text('Skala AQI',
                           style: TextStyle(
-                              color: Color(0xFFE2E8F0),
-                              fontSize: 11,
+                              color: AppTheme.textPrimary,
+                              fontSize: 12,
                               fontWeight: FontWeight.w800)),
                     ],
                   ),
@@ -797,7 +798,7 @@ class _LegendPanel extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(e.$2,
                             style: const TextStyle(
-                                color: Color(0xFFCBD5E1), fontSize: 10.5)),
+                                color: AppTheme.textSoft, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -809,12 +810,12 @@ class _LegendPanel extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.format_list_bulleted,
-                      size: 15, color: Color(0xFF94A3B8)),
+                      size: 15, color: AppTheme.textMuted),
                   SizedBox(width: 5),
                   Text('Skala AQI',
                       style: TextStyle(
-                          color: Color(0xFFE2E8F0),
-                          fontSize: 11.5,
+                          color: AppTheme.textPrimary,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700)),
                 ],
               ),
@@ -839,7 +840,7 @@ class _PulseDot extends StatelessWidget {
             height: 34,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF34D399).withValues(alpha: 0.18),
+              color: AppTheme.accent.withValues(alpha: 0.18),
             ),
           ),
           Container(
@@ -847,7 +848,7 @@ class _PulseDot extends StatelessWidget {
             height: 18,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF34D399).withValues(alpha: 0.30),
+              color: AppTheme.accent.withValues(alpha: 0.30),
             ),
           ),
           Container(
@@ -855,7 +856,7 @@ class _PulseDot extends StatelessWidget {
             height: 10,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF34D399),
+              color: AppTheme.accent,
               border: Border.all(color: Colors.white, width: 2),
             ),
           ),
@@ -880,7 +881,7 @@ class _ProbeDot extends StatelessWidget {
             height: 30,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+              color: AppTheme.sky.withValues(alpha: 0.15),
             ),
           ),
           Container(
@@ -888,7 +889,7 @@ class _ProbeDot extends StatelessWidget {
             height: 12,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF38BDF8),
+              color: AppTheme.sky,
               border: Border.all(color: Colors.white, width: 2),
             ),
           ),
@@ -982,7 +983,7 @@ class _CurrentHud extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                            color: Color(0xFFE2E8F0),
+                            color: AppTheme.textPrimary,
                             fontWeight: FontWeight.w800,
                             fontSize: 14)),
                     Text(
@@ -991,7 +992,7 @@ class _CurrentHud extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 11)),
+                            fontSize: 12)),
                   ],
                 ),
               ),
@@ -1006,7 +1007,7 @@ class _CurrentHud extends StatelessWidget {
                   icon: const Icon(Icons.push_pin_outlined, size: 16),
                   label: const Text('Jadikan Beranda',
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Color(0xFFE2E8F0), fontSize: 12)),
+                      style: TextStyle(color: AppTheme.textPrimary, fontSize: 12)),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     side:
@@ -1101,14 +1102,14 @@ class _ProbeHud extends ConsumerWidget {
                     Row(
                       children: [
                         const Icon(Icons.travel_explore,
-                            size: 14, color: Color(0xFF38BDF8)),
+                            size: 14, color: AppTheme.sky),
                         const SizedBox(width: 5),
                         Flexible(
                           child: Text(name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  color: Color(0xFFE2E8F0),
+                                  color: AppTheme.textPrimary,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 14)),
                         ),
@@ -1120,7 +1121,7 @@ class _ProbeHud extends ConsumerWidget {
                             : 'Lagi ngitung AQI titik ini…',
                         style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 11)),
+                            fontSize: 12)),
                   ],
                 ),
               ),
@@ -1129,7 +1130,7 @@ class _ProbeHud extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(999),
                 child: const Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.close, size: 18, color: Color(0xFF94A3B8)),
+                  child: Icon(Icons.close, size: 18, color: AppTheme.textMuted),
                 ),
               ),
             ],
@@ -1155,7 +1156,7 @@ class _ProbeHud extends ConsumerWidget {
                     label: const Text('Jadikan Beranda',
                         overflow: TextOverflow.ellipsis,
                         style:
-                            TextStyle(color: Color(0xFFE2E8F0), fontSize: 12)),
+                            TextStyle(color: AppTheme.textPrimary, fontSize: 12)),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       side: BorderSide(
@@ -1202,13 +1203,13 @@ class _ReportPin extends StatelessWidget {
   Widget build(BuildContext context) {
     final category = report.kategori.first;
     final color = switch (category) {
-      ReportCategory.banjir => const Color(0xFF38BDF8),
-      ReportCategory.tutupJalan => const Color(0xFFFBBF24),
+      ReportCategory.banjir => AppTheme.sky,
+      ReportCategory.tutupJalan => AppTheme.warning,
       ReportCategory.listrikPadam => const Color(0xFFFACC15),
       ReportCategory.airPadam => const Color(0xFF2DD4BF),
       ReportCategory.macet => const Color(0xFFFB923C),
       ReportCategory.kebakaran => const Color(0xFFFB7185),
-      _ => const Color(0xFF34D399),
+      _ => AppTheme.accent,
     };
     final icon = switch (category) {
       ReportCategory.banjir => Icons.water_outlined,

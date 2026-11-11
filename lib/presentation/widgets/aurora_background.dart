@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import '../../core/app_theme.dart';
 
 /// Background premium: gradasi gelap + 2 blob aurora bergerak pelan +
 /// partikel mengapung (jumlah & warnanya ngikutin level AQI).
@@ -68,7 +69,7 @@ class _AuroraPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [_darken(accent, 0.62), const Color(0xFF070B14)],
+        colors: [_darken(accent, 0.62), AppTheme.night],
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, bgPaint);
 
@@ -117,7 +118,7 @@ class _AuroraPainter extends CustomPainter {
   }
 
   static Color _lift(Color c, double a) => c.withValues(alpha: a);
-  static Color _darken(Color c, double f) => Color.lerp(c, const Color(0xFF070B14), f)!;
+  static Color _darken(Color c, double f) => Color.lerp(c, AppTheme.night, f)!;
 
   @override
   bool shouldRepaint(_AuroraPainter old) => true;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../../core/app_theme.dart';
 
 Future<LatLng?> pickReportLocation(
   BuildContext context, {
@@ -9,7 +10,7 @@ Future<LatLng?> pickReportLocation(
   return showModalBottomSheet<LatLng>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: const Color(0xFF0B1220),
+    backgroundColor: AppTheme.nightSurface,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -43,7 +44,7 @@ class _ReportLocationPickerState extends State<_ReportLocationPicker> {
               const Text(
                 'Pilih titik laporan',
                 style: TextStyle(
-                  color: Color(0xFFE2E8F0),
+                  color: AppTheme.textPrimary,
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                 ),
@@ -51,7 +52,7 @@ class _ReportLocationPickerState extends State<_ReportLocationPicker> {
               const SizedBox(height: 4),
               const Text(
                 'Geser peta lalu ketuk lokasi kejadian.',
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5),
+                style: TextStyle(color: AppTheme.textMuted, fontSize: 12.5),
               ),
               const SizedBox(height: 12),
               Expanded(
@@ -81,7 +82,7 @@ class _ReportLocationPickerState extends State<_ReportLocationPicker> {
                                 height: 48,
                                 child: const Icon(
                                   Icons.location_pin,
-                                  color: Color(0xFF34D399),
+                                  color: AppTheme.accent,
                                   size: 44,
                                 ),
                               ),
@@ -94,7 +95,7 @@ class _ReportLocationPickerState extends State<_ReportLocationPicker> {
                         bottom: 6,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0B1220)
+                            color: AppTheme.nightSurface
                                 .withValues(alpha: 0.8),
                             borderRadius: BorderRadius.circular(6),
                           ),
@@ -104,7 +105,7 @@ class _ReportLocationPickerState extends State<_ReportLocationPicker> {
                             child: Text(
                               '© OpenStreetMap contributors',
                               style: TextStyle(
-                                  color: Color(0xFFE2E8F0), fontSize: 9),
+                                  color: AppTheme.textPrimary, fontSize: 12),
                             ),
                           ),
                         ),
@@ -118,7 +119,7 @@ class _ReportLocationPickerState extends State<_ReportLocationPicker> {
                 '${_selected.latitude.toStringAsFixed(5)}, '
                 '${_selected.longitude.toStringAsFixed(5)}',
                 style: const TextStyle(
-                  color: Color(0xFF94A3B8),
+                  color: AppTheme.textMuted,
                   fontSize: 12,
                   fontFeatures: [FontFeature.tabularFigures()],
                 ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/api/articles_api.dart';
 import '../widgets/glass.dart';
+import '../../core/app_theme.dart';
 
 // ---------------------------------------------------------------------------
 // State
@@ -94,7 +95,7 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
       ),
       body: RefreshIndicator(
         color: Colors.white,
-        backgroundColor: const Color(0xFF0B1220),
+        backgroundColor: AppTheme.nightSurface,
         onRefresh: () => ref.read(articlesProvider.notifier).load(),
         child: LayoutBuilder(
           builder: (context, c) {
@@ -117,11 +118,11 @@ class _EducationScreenState extends ConsumerState<EducationScreen> {
                 child: Column(
                   children: [
                     const Icon(Icons.wifi_off_outlined,
-                        color: Color(0xFF94A3B8), size: 36),
+                        color: AppTheme.textMuted, size: 36),
                     const SizedBox(height: 10),
                     const Text('Gagal ambil artikel',
                         style: TextStyle(
-                            color: Color(0xFFE2E8F0),
+                            color: AppTheme.textPrimary,
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     Text('Tarik kebawah buat coba lagi',
@@ -214,8 +215,8 @@ class _ArticlesStatus extends StatelessWidget {
                 : Icons.offline_bolt_outlined,
             size: 13,
             color: r?.fromRemote == true
-                ? const Color(0xFF34D399)
-                : const Color(0xFF94A3B8),
+                ? AppTheme.accent
+                : AppTheme.textMuted,
           );
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -236,7 +237,7 @@ class _ArticlesStatus extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.55),
-                fontSize: 11.5,
+                fontSize: 12,
               ),
             ),
           ),
@@ -257,9 +258,9 @@ const _imgHeaders = {
 
 /// Palet aksen kicker — berputar per urutan artikel agar feed tidak monoton.
 const _accentCycle = [
-  Color(0xFF10B981), // emerald
-  Color(0xFF38BDF8), // sky
-  Color(0xFFFBBF24), // amber
+  AppTheme.emerald, // emerald
+  AppTheme.sky, // sky
+  AppTheme.warning, // amber
   Color(0xFFFB7185), // rose
   Color(0xFFA78BFA), // violet
 ];
@@ -285,7 +286,7 @@ Widget _imgPlaceholder() => Container(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF12203A), Color(0xFF0B1220)],
+          colors: [Color(0xFF12203A), AppTheme.nightSurface],
         ),
       ),
       alignment: Alignment.center,
@@ -346,7 +347,7 @@ class _VariedFeed extends StatelessWidget {
       'Artikel dimuat dari repositori LUMAIR. '
       'Foto dokumentasi Wikimedia Commons, sesuai lisensinya masing-masing.',
       textAlign: TextAlign.center,
-      style: TextStyle(color: Color(0x59FFFFFF), fontSize: 11),
+      style: TextStyle(color: Color(0x59FFFFFF), fontSize: 12),
     ));
     return Column(children: items);
   }
@@ -399,7 +400,7 @@ class _HeroCard extends StatelessWidget {
                   child: const Text('SOROTAN',
                       style: TextStyle(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.4)),
                 ),
@@ -415,7 +416,7 @@ class _HeroCard extends StatelessWidget {
                     Text(article.kicker,
                         style: TextStyle(
                             color: accent,
-                            fontSize: 10.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.6)),
                     const SizedBox(height: 5),
@@ -482,7 +483,7 @@ class _MiniCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             color: accent,
-                            fontSize: 9.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.4)),
                     const SizedBox(height: 3),
@@ -499,12 +500,12 @@ class _MiniCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.45),
-                            fontSize: 11)),
+                            fontSize: 12)),
                   ],
                 ),
               ),
               const Icon(Icons.chevron_right,
-                  size: 18, color: Color(0xFF94A3B8)),
+                  size: 18, color: AppTheme.textMuted),
             ],
           ),
         ),
@@ -560,7 +561,7 @@ class _EditorialCardState extends State<_EditorialCard> {
                       child: Text(article.kicker,
                           style: TextStyle(
                               color: accent,
-                              fontSize: 10.5,
+                              fontSize: 12,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.6)),
                     ),
@@ -611,7 +612,7 @@ class _EditorialCardState extends State<_EditorialCard> {
                                   Text('Buka halaman penuh',
                                       style: TextStyle(
                                           color: accent,
-                                          fontSize: 11.5,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.w700)),
                                 ],
                               ),
@@ -626,7 +627,7 @@ class _EditorialCardState extends State<_EditorialCard> {
                     Text(_expanded ? 'TUTUP' : 'BACA SELENGKAPNYA',
                         style: TextStyle(
                             color: accent,
-                            fontSize: 10.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.2)),
                     const SizedBox(width: 4),
@@ -639,7 +640,7 @@ class _EditorialCardState extends State<_EditorialCard> {
                     Text('${article.body.length} paragraf',
                         style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.35),
-                            fontSize: 10.5)),
+                            fontSize: 12)),
                   ],
                 ),
               ],
@@ -682,7 +683,7 @@ class _TileCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           color: accent,
-                          fontSize: 9,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.3)),
                   const SizedBox(height: 4),
@@ -699,7 +700,7 @@ class _TileCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.45),
-                          fontSize: 11,
+                          fontSize: 12,
                           height: 1.4)),
                 ],
               ),
@@ -741,7 +742,7 @@ class _WideCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               color: accent,
-                              fontSize: 9.5,
+                              fontSize: 12,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.4)),
                       const SizedBox(height: 4),
@@ -758,7 +759,7 @@ class _WideCard extends StatelessWidget {
                           Text('Baca selengkapnya',
                               style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600)),
                           const SizedBox(width: 2),
                           Icon(Icons.chevron_right, size: 16, color: accent),
@@ -838,7 +839,7 @@ class _ArticleDetail extends StatelessWidget {
                         height: 24,
                         child: CircularProgressIndicator(strokeWidth: 2))),
             errorBuilder: (_, __, ___) =>
-                Container(color: const Color(0xFF0B1220)),
+                Container(color: AppTheme.nightSurface),
           ),
         ),
       );
@@ -848,7 +849,7 @@ class _ArticleDetail extends StatelessWidget {
       padding: const EdgeInsets.only(top: 12),
       child: Text(article.credit,
           style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+              color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
     );
   }
 
@@ -861,7 +862,7 @@ class _ArticleDetail extends StatelessWidget {
       const SizedBox(height: 6),
       Text(article.teaser,
           style: const TextStyle(
-              color: Color(0xFF94A3B8),
+              color: AppTheme.textMuted,
               fontSize: 14,
               height: 1.55,
               fontWeight: FontWeight.w500)),
@@ -869,14 +870,14 @@ class _ArticleDetail extends StatelessWidget {
       for (final p in article.body) ...[
         Text(p,
             style: const TextStyle(
-                fontSize: 15, height: 1.75, color: Color(0xFFCBD5E1))),
+                fontSize: 15, height: 1.75, color: AppTheme.textSoft)),
         const SizedBox(height: 14),
       ],
       const SizedBox(height: 10),
       const GlassChip(
         icon: Icons.school_outlined,
         label: 'Edukasi LUMAIR',
-        color: Color(0xFF94A3B8),
+        color: AppTheme.textMuted,
       ),
     ];
   }
@@ -893,7 +894,7 @@ class _DidYouKnowPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFF34D399);
+    const accent = AppTheme.accent;
 
     return GlassCard(
       gradient: const LinearGradient(
@@ -911,7 +912,7 @@ class _DidYouKnowPanel extends StatelessWidget {
             'TAHUKAH KAMU?',
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.58),
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.4,
             ),
@@ -933,7 +934,7 @@ class _DidYouKnowPanel extends StatelessWidget {
                     Text(
                       'PM2.5',
                       style: TextStyle(
-                        color: Color(0xFF34D399),
+                        color: AppTheme.accent,
                         fontSize: 27,
                         fontWeight: FontWeight.w800,
                         height: 1.0,
@@ -943,7 +944,7 @@ class _DidYouKnowPanel extends StatelessWidget {
                     Text(
                       'Partikel halus yang sangat kecil dan dapat masuk jauh ke dalam paru-paru.',
                       style: TextStyle(
-                        color: Color(0xFFE2E8F0),
+                        color: AppTheme.textPrimary,
                         fontSize: 12.5,
                         height: 1.4,
                       ),
@@ -977,7 +978,7 @@ class _DidYouKnowPanel extends StatelessWidget {
                     'Tips: Periksa kualitas udara sebelum beraktivitas di luar ruangan.',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.68),
-                      fontSize: 11.5,
+                      fontSize: 12,
                       height: 1.4,
                     ),
                   ),
@@ -1012,13 +1013,13 @@ class _SearchRow extends StatelessWidget {
           ),
           child: const Row(
             children: [
-              Icon(Icons.explore_outlined, color: Color(0xFF34D399), size: 20),
+              Icon(Icons.explore_outlined, color: AppTheme.accent, size: 20),
               SizedBox(width: 10),
               Expanded(
                 child: Text('Cari informasi, tips, dan panduan lainnya',
-                    style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 13)),
+                    style: TextStyle(color: AppTheme.textSoft, fontSize: 13)),
               ),
-              Icon(Icons.chevron_right, size: 18, color: Color(0xFF64748B)),
+              Icon(Icons.chevron_right, size: 18, color: AppTheme.textFaint),
             ],
           ),
         ),
@@ -1062,7 +1063,7 @@ class _ArticleSearchDialogState extends State<_ArticleSearchDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF0B1220),
+      backgroundColor: AppTheme.nightSurface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480, maxHeight: 560),
@@ -1074,7 +1075,7 @@ class _ArticleSearchDialogState extends State<_ArticleSearchDialog> {
             children: [
               const Text('Cari di Edukasi',
                   style: TextStyle(
-                      color: Color(0xFFE2E8F0),
+                      color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 16)),
               const SizedBox(height: 12),
@@ -1094,7 +1095,7 @@ class _ArticleSearchDialogState extends State<_ArticleSearchDialog> {
                     ? const Padding(
                         padding: EdgeInsets.all(16),
                         child: Text('Tidak ada artikel yang cocok',
-                            style: TextStyle(color: Color(0xFF64748B))),
+                            style: TextStyle(color: AppTheme.textFaint)),
                       )
                     : ListView(
                         shrinkWrap: true,
@@ -1104,12 +1105,12 @@ class _ArticleSearchDialogState extends State<_ArticleSearchDialog> {
                               contentPadding: EdgeInsets.zero,
                               dense: true,
                               leading: const Icon(Icons.article_outlined,
-                                  size: 18, color: Color(0xFF34D399)),
+                                  size: 18, color: AppTheme.accent),
                               title: Text(a.title,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                      color: Color(0xFFE2E8F0),
+                                      color: AppTheme.textPrimary,
                                       fontSize: 13.5)),
                               subtitle: Text(a.kicker,
                                   maxLines: 1,
@@ -1117,7 +1118,7 @@ class _ArticleSearchDialogState extends State<_ArticleSearchDialog> {
                                   style: TextStyle(
                                       color:
                                           Colors.white.withValues(alpha: 0.45),
-                                      fontSize: 11)),
+                                      fontSize: 12)),
                               onTap: () {
                                 Navigator.of(context).pop();
                                 _openArticle(context, a);

@@ -18,6 +18,7 @@ import 'screens/home_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'widgets/glass.dart';
 import 'widgets/slide_page.dart';
+import '../core/app_theme.dart';
 
 /// Gate peluncuran: splash statis → onboarding (1x) → navigasi utama.
 class RootGate extends StatefulWidget {
@@ -75,7 +76,7 @@ class _SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B14),
+      backgroundColor: AppTheme.night,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -93,7 +94,7 @@ class _SplashScreen extends StatelessWidget {
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Color(0xFF34D399), Color(0xFF0EA5E9)],
+                    colors: [AppTheme.accent, AppTheme.skyDeep],
                   ),
                   borderRadius: BorderRadius.circular(26),
                 ),
@@ -106,7 +107,7 @@ class _SplashScreen extends StatelessWidget {
               height: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2.4,
-                color: Color(0xFF34D399),
+                color: AppTheme.accent,
               ),
             ),
           ],
@@ -187,7 +188,7 @@ class _RootNavState extends ConsumerState<_RootNav> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF0B1220),
+          color: AppTheme.nightSurface,
           border: Border(
             top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
           ),
@@ -199,8 +200,8 @@ class _RootNavState extends ConsumerState<_RootNav> {
             backgroundColor: Colors.transparent,
             elevation: 0,
             currentIndex: _index,
-            selectedItemColor: const Color(0xFF34D399),
-            unselectedItemColor: const Color(0xFF64748B),
+            selectedItemColor: AppTheme.accent,
+            unselectedItemColor: AppTheme.textFaint,
             selectedFontSize: 11.5,
             unselectedFontSize: 11.5,
             showSelectedLabels: true,
@@ -283,7 +284,7 @@ class _BrandHeader extends ConsumerWidget {
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF34D399), Color(0xFF0EA5E9)],
+                          colors: [AppTheme.accent, AppTheme.skyDeep],
                         ),
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -329,8 +330,8 @@ class _BrandHeader extends ConsumerWidget {
                             ? Icons.notifications_active
                             : Icons.notifications_none,
                         color: alertsOn
-                            ? const Color(0xFF34D399)
-                            : const Color(0xFFCBD5E1),
+                            ? AppTheme.accent
+                            : AppTheme.textSoft,
                       ),
                     ),
                     InkWell(
@@ -353,13 +354,13 @@ class _BrandHeader extends ConsumerWidget {
                               ),
                               child: const Icon(
                                 Icons.person_outline,
-                                color: Color(0xFFCBD5E1),
+                                color: AppTheme.textSoft,
                                 size: 20,
                               ),
                             )
                           : CircleAvatar(
                               radius: 19,
-                              backgroundColor: const Color(0xFF34D399),
+                              backgroundColor: AppTheme.accent,
                               child: Text(
                                 auth.displayName.isEmpty
                                     ? '?'

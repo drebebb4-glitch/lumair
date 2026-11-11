@@ -6,6 +6,7 @@ import '../../domain/report_provider.dart';
 import '../../data/services/supabase_service.dart';
 import '../widgets/glass.dart';
 import 'auth_screen.dart';
+import '../../core/app_theme.dart';
 
 class ReportDetailScreen extends ConsumerStatefulWidget {
   const ReportDetailScreen({
@@ -93,7 +94,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                   Text(
                     entry.deskripsi,
                     style: const TextStyle(
-                      color: Color(0xFFE2E8F0),
+                      color: AppTheme.textPrimary,
                       fontSize: 15,
                       height: 1.5,
                     ),
@@ -138,7 +139,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                   child: Text(
                     'Komentar',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: const Color(0xFFE2E8F0),
+                          color: AppTheme.textPrimary,
                           fontWeight: FontWeight.w800,
                         ),
                   ),
@@ -156,7 +157,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                         _showComments
                             ? Icons.mode_comment
                             : Icons.mode_comment_outlined,
-                        color: const Color(0xFF34D399),
+                        color: AppTheme.accent,
                       ),
                     ),
                     Positioned(
@@ -167,7 +168,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                             const BoxConstraints(minWidth: 18, minHeight: 18),
                         padding: const EdgeInsets.symmetric(horizontal: 5),
                         decoration: const BoxDecoration(
-                          color: Color(0xFF10B981),
+                          color: AppTheme.emerald,
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
@@ -175,7 +176,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                           '$commentCount',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -209,7 +210,7 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                       const GlassCard(
                         child: Text(
                           'Belum ada komentar.',
-                          style: TextStyle(color: Color(0xFF94A3B8)),
+                          style: TextStyle(color: AppTheme.textMuted),
                         ),
                       )
                     else
@@ -254,8 +255,8 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                             _message!,
                             style: TextStyle(
                               color: _sendFailed
-                                  ? const Color(0xFFF87171)
-                                  : const Color(0xFF34D399),
+                                  ? AppTheme.dangerSoft
+                                  : AppTheme.accent,
                               fontSize: 12.5,
                             ),
                           ),
@@ -300,7 +301,7 @@ class _DetailLine extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: const Color(0xFF34D399)),
+        Icon(icon, size: 18, color: AppTheme.accent),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -309,7 +310,7 @@ class _DetailLine extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  color: Color(0xFFE2E8F0),
+                  color: AppTheme.textPrimary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -318,7 +319,7 @@ class _DetailLine extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                    color: AppTheme.textMuted,
                     fontSize: 12,
                   ),
                 ),
@@ -344,7 +345,7 @@ class _CategoryChip extends StatelessWidget {
       visualDensity: VisualDensity.compact,
       side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
       backgroundColor: const Color(0xFF12203A),
-      labelStyle: const TextStyle(color: Color(0xFFE2E8F0), fontSize: 12),
+      labelStyle: const TextStyle(color: AppTheme.textPrimary, fontSize: 12),
     );
   }
 }
@@ -369,7 +370,7 @@ class _CommentTile extends StatelessWidget {
                   comment.penulis,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFFE2E8F0),
+                    color: AppTheme.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: 12.5,
                   ),
@@ -378,8 +379,8 @@ class _CommentTile extends StatelessWidget {
               Text(
                 _dateTime(comment.createdAt),
                 style: const TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 10.5,
+                  color: AppTheme.textFaint,
+                  fontSize: 12,
                 ),
               ),
             ],
@@ -388,7 +389,7 @@ class _CommentTile extends StatelessWidget {
           Text(
             comment.isi,
             style: const TextStyle(
-              color: Color(0xFFCBD5E1),
+              color: AppTheme.textSoft,
               fontSize: 13,
               height: 1.4,
             ),

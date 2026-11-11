@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/auth_provider.dart';
 import '../widgets/glass.dart';
+import '../../core/app_theme.dart';
 
 /// Layar Masuk/Daftar LUMAIR — satu layar dua tab (email + password),
 /// lewat Supabase Auth. Kalau backend belum terhubung (--dart-define
@@ -98,19 +99,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF0B1220),
+              backgroundColor: AppTheme.nightSurface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
               ),
               title: const Row(
                 children: [
-                  Icon(Icons.lock_reset, color: Color(0xFF38BDF8), size: 24),
+                  Icon(Icons.lock_reset, color: AppTheme.sky, size: 24),
                   SizedBox(width: 8),
                   Text(
                     'Pemulihan Password',
                     style: TextStyle(
-                        color: Color(0xFFE2E8F0),
+                        color: AppTheme.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.w700),
                   ),
@@ -123,7 +124,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   const Text(
                     'Masukkan email akun kamu. Kami akan mengirim tautan untuk mengatur ulang kata sandi.',
                     style: TextStyle(
-                        color: Color(0xFF94A3B8), fontSize: 13, height: 1.4),
+                        color: AppTheme.textMuted, fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 14),
                   TextField(
@@ -142,8 +143,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                       resetMsg!,
                       style: TextStyle(
                         color: resetOk
-                            ? const Color(0xFF34D399)
-                            : const Color(0xFFEF4444),
+                            ? AppTheme.accent
+                            : AppTheme.danger,
                         fontSize: 12.5,
                         fontWeight:
                             resetOk ? FontWeight.w600 : FontWeight.normal,
@@ -156,7 +157,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 TextButton(
                   onPressed: sending ? null : () => Navigator.of(dialogCtx).pop(),
                   child: const Text('Tutup',
-                      style: TextStyle(color: Color(0xFF94A3B8))),
+                      style: TextStyle(color: AppTheme.textMuted)),
                 ),
                 FilledButton(
                   onPressed: sending
@@ -195,7 +196,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final auth = ref.watch(authUserProvider);
     if (auth != null) return _AccountCardScreen(auth: auth);
     return Scaffold(
-      backgroundColor: const Color(0xFF070B14),
+      backgroundColor: AppTheme.night,
       appBar: AppBar(
         title: const Text('Masuk LUMAIR'),
         automaticallyImplyLeading: !widget.restrictive,
@@ -221,12 +222,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                           indicatorSize: TabBarIndicatorSize.tab,
                           indicator: BoxDecoration(
                             color:
-                                const Color(0xFF34D399).withValues(alpha: 0.2),
+                                AppTheme.accent.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           dividerColor: Colors.transparent,
-                          labelColor: const Color(0xFF34D399),
-                          unselectedLabelColor: const Color(0xFF64748B),
+                          labelColor: AppTheme.accent,
+                          unselectedLabelColor: AppTheme.textFaint,
                           labelStyle: const TextStyle(
                               fontSize: 13.5, fontWeight: FontWeight.w800),
                           tabs: const [
@@ -294,12 +295,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                     hintText: 'minimal 6 karakter',
                                     prefixIcon: const Icon(Icons.lock_outline, size: 20),
                                     suffixIcon: IconButton(
+                                      tooltip: _obscurePass ? 'Tampilkan password' : 'Sembunyikan password',
                                       icon: Icon(
                                         _obscurePass
                                             ? Icons.visibility_off
                                             : Icons.visibility,
                                         size: 20,
-                                        color: const Color(0xFF94A3B8),
+                                        color: AppTheme.textMuted,
                                       ),
                                       onPressed: () => setState(
                                           () => _obscurePass = !_obscurePass),
@@ -326,7 +328,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                       child: const Text(
                                         'Lupa password?',
                                         style: TextStyle(
-                                          color: Color(0xFF38BDF8),
+                                          color: AppTheme.sky,
                                           fontSize: 12.5,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -346,12 +348,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                       hintText: 'ulangi password',
                                       prefixIcon: const Icon(Icons.lock_clock_outlined, size: 20),
                                       suffixIcon: IconButton(
+                                        tooltip: _obscureConfirmPass ? 'Tampilkan password' : 'Sembunyikan password',
                                         icon: Icon(
                                           _obscureConfirmPass
                                               ? Icons.visibility_off
                                               : Icons.visibility,
                                           size: 20,
-                                          color: const Color(0xFF94A3B8),
+                                          color: AppTheme.textMuted,
                                         ),
                                         onPressed: () => setState(() =>
                                             _obscureConfirmPass =
@@ -387,14 +390,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                         horizontal: 14, vertical: 10),
                                     decoration: BoxDecoration(
                                       color: (_success
-                                              ? const Color(0xFF34D399)
-                                              : const Color(0xFFEF4444))
+                                              ? AppTheme.accent
+                                              : AppTheme.danger)
                                           .withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                         color: (_success
-                                                ? const Color(0xFF34D399)
-                                                : const Color(0xFFEF4444))
+                                                ? AppTheme.accent
+                                                : AppTheme.danger)
                                             .withValues(alpha: 0.3),
                                       ),
                                     ),
@@ -406,8 +409,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                               : Icons.error_outline,
                                           size: 18,
                                           color: _success
-                                              ? const Color(0xFF34D399)
-                                              : const Color(0xFFEF4444),
+                                              ? AppTheme.accent
+                                              : AppTheme.danger,
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
@@ -415,8 +418,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                                             _message!,
                                             style: TextStyle(
                                               color: _success
-                                                  ? const Color(0xFF34D399)
-                                                  : const Color(0xFFEF4444),
+                                                  ? AppTheme.accent
+                                                  : AppTheme.danger,
                                               fontSize: 12.5,
                                               fontWeight: FontWeight.w600,
                                               height: 1.3,
@@ -442,7 +445,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                   'bisa dibaca semua pengguna.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      color: Color(0xFF64748B), fontSize: 12.5, height: 1.5),
+                      color: AppTheme.textFaint, fontSize: 12.5, height: 1.5),
                 ),
               ],
             ),
@@ -458,7 +461,7 @@ class _AccountCardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: const Color(0xFF070B14),
+      backgroundColor: AppTheme.night,
       appBar: AppBar(title: const Text('Akun LUMAIR')),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -473,7 +476,7 @@ class _AccountCardScreen extends ConsumerWidget {
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     gradient:
-                        LinearGradient(colors: [Color(0xFF34D399), Color(0xFF0EA5E9)]),
+                        LinearGradient(colors: [AppTheme.accent, AppTheme.skyDeep]),
                   ),
                   child: Text(
                     auth.displayName.isEmpty
@@ -488,7 +491,7 @@ class _AccountCardScreen extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Text(auth.displayName,
                     style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
+                        color: AppTheme.textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
@@ -502,7 +505,7 @@ class _AccountCardScreen extends ConsumerWidget {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        backgroundColor: const Color(0xFF0B1220),
+                        backgroundColor: AppTheme.nightSurface,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                           side: BorderSide(
@@ -510,12 +513,12 @@ class _AccountCardScreen extends ConsumerWidget {
                         ),
                         title: const Text('Keluar dari Akun?',
                             style: TextStyle(
-                                color: Color(0xFFE2E8F0),
+                                color: AppTheme.textPrimary,
                                 fontWeight: FontWeight.w700)),
                         content: const Text(
                           'Kamu perlu masuk kembali untuk mengirim laporan banjir atau penutupan jalan.',
                           style: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: AppTheme.textMuted,
                               fontSize: 13,
                               height: 1.4),
                         ),
@@ -523,11 +526,11 @@ class _AccountCardScreen extends ConsumerWidget {
                           TextButton(
                             onPressed: () => Navigator.of(ctx).pop(false),
                             child: const Text('Batal',
-                                style: TextStyle(color: Color(0xFF94A3B8))),
+                                style: TextStyle(color: AppTheme.textMuted)),
                           ),
                           FilledButton(
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFFEF4444),
+                              backgroundColor: AppTheme.danger,
                             ),
                             onPressed: () => Navigator.of(ctx).pop(true),
                             child: const Text('Keluar'),
@@ -541,9 +544,9 @@ class _AccountCardScreen extends ConsumerWidget {
                       Navigator.of(context).pop();
                     }
                   },
-                  icon: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
+                  icon: const Icon(Icons.logout, color: AppTheme.danger, size: 18),
                   label: const Text('Keluar akun',
-                      style: TextStyle(color: Color(0xFFEF4444))),
+                      style: TextStyle(color: AppTheme.danger)),
                 ),
               ],
             ),
@@ -569,11 +572,11 @@ class _NotConfiguredCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.settings_input_component_outlined,
-                    color: Color(0xFFFBBF24), size: 44),
+                    color: AppTheme.warning, size: 44),
                 SizedBox(height: 12),
                 Text('Backend belum terhubung',
                     style: TextStyle(
-                        color: Color(0xFFE2E8F0),
+                        color: AppTheme.textPrimary,
                         fontWeight: FontWeight.w800,
                         fontSize: 15)),
                 SizedBox(height: 8),
@@ -583,7 +586,7 @@ class _NotConfiguredCard extends StatelessWidget {
                   '--dart-define=SUPABASE_ANON_KEY=... (panduan di README).',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                      color: Color(0xFF94A3B8), fontSize: 12.5, height: 1.5),
+                      color: AppTheme.textMuted, fontSize: 12.5, height: 1.5),
                 ),
               ],
             ),

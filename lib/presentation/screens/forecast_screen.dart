@@ -46,7 +46,7 @@ class ForecastScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.cloud_off_rounded,
-                    color: Color(0xFF94A3B8), size: 36),
+                    color: AppTheme.textMuted, size: 36),
                 const SizedBox(height: AppSpacing.md),
                 const Text('Gagal memuat data prakiraan',
                     style: AppTextStyles.body, textAlign: TextAlign.center),
@@ -345,7 +345,7 @@ class _DayCardsSection extends StatelessWidget {
               children: [
                 const Row(children: [
                   Icon(Icons.calendar_month_rounded,
-                      size: 18, color: Color(0xFF94A3B8)),
+                      size: 18, color: AppTheme.textMuted),
                   SizedBox(width: AppSpacing.sm),
                   Text('Ringkasan 4 hari', style: AppTextStyles.sectionTitle),
                 ]),
@@ -412,7 +412,7 @@ class _HourChipsSection extends StatelessWidget {
                         style: TextStyle(
                             color: Colors.white
                                 .withValues(alpha: i == 0 ? 0.85 : 0.6),
-                            fontSize: 10,
+                            fontSize: 12,
                             fontWeight:
                                 i == 0 ? FontWeight.w700 : FontWeight.w400)),
                     const SizedBox(height: 2),
@@ -426,7 +426,7 @@ class _HourChipsSection extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                             color: c.withValues(alpha: 0.95),
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700)),
                   ],
                 ),
@@ -468,7 +468,7 @@ class _PmListSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Row(children: [
-              Icon(Icons.schedule_rounded, size: 18, color: Color(0xFF94A3B8)),
+              Icon(Icons.schedule_rounded, size: 18, color: AppTheme.textMuted),
               SizedBox(width: AppSpacing.sm),
               Text('Per jam, 24 jam ke depan', style: AppTextStyles.sectionTitle),
             ]),
@@ -551,7 +551,7 @@ class _AqiInfoAccordionState extends State<_AqiInfoAccordion> {
                   turns: _open ? 0.5 : 0,
                   duration: const Duration(milliseconds: 180),
                   child: const Icon(Icons.expand_more_rounded,
-                      color: Color(0xFF94A3B8)),
+                      color: AppTheme.textMuted),
                 ),
               ],
             ),
@@ -661,7 +661,7 @@ class _LegendDots extends StatelessWidget {
               Text(name,
                   style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.55),
-                      fontSize: 9.5)),
+                      fontSize: 12)),
             ],
           ),
       ],
@@ -690,7 +690,7 @@ class _LineChart24 extends StatelessWidget {
         children: [
           Text(p.aqi.toString(),
               style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 12,
                   fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
                   color: AqiHelper.color(p.aqi))),
           Text(now ? 'sekarang' : ForecastScreen._fmtHour(p.time),
@@ -699,7 +699,7 @@ class _LineChart24 extends StatelessWidget {
                   color: now
                       ? Colors.white.withValues(alpha: 0.85)
                       : Colors.white.withValues(alpha: 0.6),
-                  fontSize: 9.5,
+                  fontSize: 12,
                   fontWeight: now ? FontWeight.w700 : FontWeight.w400)),
         ],
       );
@@ -735,7 +735,7 @@ class _LineChart24 extends StatelessWidget {
             TextStyle(
               color: c,
               fontWeight: FontWeight.w800,
-              fontSize: 11,
+              fontSize: 12,
               height: 1.4,
             ),
           );
@@ -811,8 +811,8 @@ class _LineChart24 extends StatelessWidget {
               getTitlesWidget: (v, meta) => Text(
                 v.toInt().toString(),
                 style: const TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 11,
+                    color: AppTheme.textMuted,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600),
               ),
             ),
@@ -880,7 +880,7 @@ class _InsightBanner extends StatelessWidget {
         Icons.trending_up,
         'Udara makin buruk',
         'Siapkan masker dan tunda aktivitas luar ruangan.',
-        const Color(0xFFF87171)
+        AppTheme.dangerSoft
       );
     }
     if (diff < -8) {
@@ -888,14 +888,14 @@ class _InsightBanner extends StatelessWidget {
         Icons.trending_down,
         'Udara makin bersih',
         'Makin lama makin segar — cocok buat agenda luar ruangan.',
-        const Color(0xFF34D399)
+        AppTheme.accent
       );
     }
     return (
       Icons.trending_flat,
       'Cukup stabil',
       'Kondisi hari ini kemungkinan berlanjut sepanjang hari.',
-      const Color(0xFFFBBF24)
+      AppTheme.warning
     );
   }
 
@@ -930,7 +930,7 @@ class _InsightBanner extends StatelessWidget {
                 '${avgFirst.toStringAsFixed(0)} → ${avgLast.toStringAsFixed(0)}',
                 style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.5),
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600),
               ),
             ],
@@ -938,7 +938,7 @@ class _InsightBanner extends StatelessWidget {
           const SizedBox(height: 3),
           Text(t.$3,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5)),
+                  color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
           const SizedBox(height: 12),
           _RecommendRow(
             icon: Icons.wb_sunny_outlined,
@@ -990,7 +990,7 @@ class _RecommendRow extends StatelessWidget {
           child: Text.rich(
             TextSpan(
               style: const TextStyle(
-                  color: Color(0xFFE2E8F0), fontSize: 12.5, height: 1.5),
+                  color: AppTheme.textPrimary, fontSize: 12.5, height: 1.5),
               children: [
                 TextSpan(text: '$label '),
                 TextSpan(
@@ -1054,7 +1054,7 @@ class _DayCard extends StatelessWidget {
               style: TextStyle(
                   color:
                       Colors.white.withValues(alpha: index == 0 ? 0.8 : 0.55),
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: index == 0 ? FontWeight.w800 : FontWeight.w600)),
           const SizedBox(height: 6),
           Text('${day.maxAqi}',
@@ -1065,18 +1065,18 @@ class _DayCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                   color: c.withValues(alpha: 0.95),
-                  fontSize: 11.5,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
           Text('(${_band(day.maxAqi)})',
               style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 10.5)),
+                  fontSize: 12)),
           const SizedBox(height: AppSpacing.xs),
           Text('puncak ${day.peakHour}:00',
               style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 10.5)),
+                  fontSize: 12)),
         ],
       ),
     );
@@ -1104,7 +1104,7 @@ class _PmRow extends StatelessWidget {
             width: 44,
             child: Text(_fmt(point.time),
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.55), fontSize: 11)),
+                    color: Colors.white.withValues(alpha: 0.55), fontSize: 12)),
           ),
           Expanded(
             child: ClipRRect(
@@ -1123,7 +1123,7 @@ class _PmRow extends StatelessWidget {
             child: Text(point.pm25.toStringAsFixed(1),
                 textAlign: TextAlign.right,
                 style: TextStyle(
-                    color: c, fontSize: 11.5, fontWeight: FontWeight.w700)),
+                    color: c, fontSize: 12, fontWeight: FontWeight.w700)),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1137,7 +1137,7 @@ class _PmRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     color: c.withValues(alpha: 0.95),
-                    fontSize: 10.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700)),
           ),
         ],

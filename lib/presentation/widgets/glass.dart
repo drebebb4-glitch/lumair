@@ -1,5 +1,6 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
+import '../../core/app_theme.dart';
 
 /// Kartu kaca (glassmorphism) — lapisan visual premium LUMAIR.
 class GlassCard extends StatelessWidget {
@@ -59,12 +60,12 @@ class ScreenTitle extends StatelessWidget {
       children: [
         Text(title,
             style: const TextStyle(
-                color: Color(0xFFE2E8F0),
+                color: AppTheme.textPrimary,
                 fontWeight: FontWeight.w700,
                 fontSize: 17)),
         Text(purpose,
             style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5)),
+                color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
       ],
     );
   }
@@ -84,7 +85,7 @@ class GlassChip extends StatelessWidget {  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? const Color(0xFFCBD5E1);
+    final c = color ?? AppTheme.textSoft;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(

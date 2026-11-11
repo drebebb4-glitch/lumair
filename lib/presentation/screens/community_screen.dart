@@ -11,6 +11,7 @@ import 'auth_screen.dart';
 import 'map_screen.dart';
 import 'report_detail_screen.dart';
 import '../widgets/report_location_picker.dart';
+import '../../core/app_theme.dart';
 
 /// Tab Komunitas LUMAIR — laporan kondisi dan gangguan lokal.
 /// Struktur: gate (backend/akun) → feed laporan terbaru + FAB
@@ -88,18 +89,18 @@ class _NotConfiguredView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.cloud_sync_outlined,
-                color: Color(0xFFFBBF24), size: 42),
+                color: AppTheme.warning, size: 42),
             SizedBox(height: 10),
             Text('Belum terhubung ke backend',
                 style: TextStyle(
-                    color: Color(0xFFE2E8F0), fontWeight: FontWeight.w800)),
+                    color: AppTheme.textPrimary, fontWeight: FontWeight.w800)),
             SizedBox(height: 6),
             Text(
               'Laporan butuh kredensial Supabase via --dart-define. '
               'Lihat panduan di README repo.',
               textAlign: TextAlign.center,
               style:
-                  TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5, height: 1.5),
+                  TextStyle(color: AppTheme.textMuted, fontSize: 12.5, height: 1.5),
             ),
           ],
         ),
@@ -120,11 +121,11 @@ class _LoginGateView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.lock_outline, color: Color(0xFF38BDF8), size: 40),
+              const Icon(Icons.lock_outline, color: AppTheme.sky, size: 40),
               const SizedBox(height: 10),
               const Text('Laporan butuh akun',
                   style: TextStyle(
-                      color: Color(0xFFE2E8F0),
+                      color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 15)),
               const SizedBox(height: 6),
@@ -132,7 +133,7 @@ class _LoginGateView extends StatelessWidget {
                 'Supaya setiap laporan punya pemilik yang jelas, '
                 'masuk (atau daftar) dulu yuk — gratis, cuma email + password.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12.5, height: 1.5),
+                style: TextStyle(color: AppTheme.textMuted, fontSize: 12.5, height: 1.5),
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
@@ -173,11 +174,11 @@ class _ReportBody extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.wifi_off_outlined,
-                            color: Color(0xFFEF4444), size: 38),
+                            color: AppTheme.danger, size: 38),
                         const SizedBox(height: 10),
                         const Text('Gagal memuat laporan',
                             style: TextStyle(
-                                color: Color(0xFFE2E8F0),
+                                color: AppTheme.textPrimary,
                                 fontWeight: FontWeight.w700)),
                         const SizedBox(height: 10),
                         FilledButton(
@@ -200,11 +201,11 @@ class _ReportBody extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.inbox_outlined,
-                                  color: Color(0xFF64748B), size: 40),
+                                  color: AppTheme.textFaint, size: 40),
                               SizedBox(height: 10),
                               Text('Belum ada laporan',
                                   style: TextStyle(
-                                      color: Color(0xFFE2E8F0),
+                                      color: AppTheme.textPrimary,
                                       fontWeight: FontWeight.w800)),
                               SizedBox(height: 6),
                               Text(
@@ -212,7 +213,7 @@ class _ReportBody extends ConsumerWidget {
                                 'untuk membagikan kondisi dan gangguan di sekitar.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                    color: Color(0xFF94A3B8),
+                                    color: AppTheme.textMuted,
                                     fontSize: 12.5,
                                     height: 1.5),
                               ),
@@ -258,16 +259,16 @@ class _ReportBody extends ConsumerWidget {
                                 final ok = await showDialog<bool>(
                                   context: context,
                                   builder: (ctx) => AlertDialog(
-                                    backgroundColor: const Color(0xFF0B1220),
+                                    backgroundColor: AppTheme.nightSurface,
                                     title: const Text('Hapus laporan ini?',
                                         style: TextStyle(
-                                            color: Color(0xFFE2E8F0),
+                                            color: AppTheme.textPrimary,
                                             fontSize: 16)),
                                     content: const Text(
                                         'Laporkan hanya bisa dihapus oleh '
                                         'kamu (pemilik laporannya).',
                                         style: TextStyle(
-                                            color: Color(0xFF94A3B8),
+                                            color: AppTheme.textMuted,
                                             fontSize: 13)),
                                     actions: [
                                       TextButton(
@@ -275,14 +276,14 @@ class _ReportBody extends ConsumerWidget {
                                             Navigator.pop(ctx, false),
                                         child: const Text('Batal',
                                             style: TextStyle(
-                                                color: Color(0xFF94A3B8))),
+                                                color: AppTheme.textMuted)),
                                       ),
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.pop(ctx, true),
                                         child: const Text('Hapus',
                                             style: TextStyle(
-                                                color: Color(0xFFEF4444))),
+                                                color: AppTheme.danger)),
                                       ),
                                     ],
                                   ),
@@ -311,7 +312,7 @@ class _ReportBody extends ConsumerWidget {
           right: 0,
           bottom: 8,
           child: FloatingActionButton.extended(
-            backgroundColor: const Color(0xFF34D399),
+            backgroundColor: AppTheme.accent,
             foregroundColor: const Color(0xFF06111F),
             icon: const Icon(Icons.report_problem_outlined),
             label: const Text('Lapor',
@@ -327,7 +328,7 @@ class _ReportBody extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF0B1220),
+      backgroundColor: AppTheme.nightSurface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -420,7 +421,7 @@ class _ReportTile extends StatelessWidget {
                                 .toUpperCase(),
                             style: TextStyle(
                               color: _reportColor(category),
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 0.6,
                             ),
@@ -434,7 +435,7 @@ class _ReportTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 11,
+                        fontSize: 12,
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -443,7 +444,7 @@ class _ReportTile extends StatelessWidget {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
+                        color: AppTheme.textPrimary,
                         fontSize: 13.5,
                         height: 1.4,
                       ),
@@ -458,7 +459,7 @@ class _ReportTile extends StatelessWidget {
                           style: TextButton.styleFrom(
                             visualDensity: VisualDensity.compact,
                             padding: const EdgeInsets.symmetric(horizontal: 4),
-                            textStyle: const TextStyle(fontSize: 11.5),
+                            textStyle: const TextStyle(fontSize: 12),
                           ),
                         ),
                       ),
@@ -475,7 +476,7 @@ class _ReportTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
-                              fontSize: 11.5,
+                              fontSize: 12,
                             ),
                           ),
                         ),
@@ -488,7 +489,7 @@ class _ReportTile extends StatelessWidget {
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   icon: const Icon(Icons.delete_outline,
-                      color: Color(0xFFEF4444), size: 19),
+                      color: AppTheme.danger, size: 19),
                   onPressed: onDelete,
                   tooltip: 'Hapus laporan ini',
                 ),
@@ -501,13 +502,13 @@ class _ReportTile extends StatelessWidget {
 }
 
 Color _reportColor(String category) => switch (category) {
-      ReportCategory.banjir => const Color(0xFF38BDF8),
-      ReportCategory.tutupJalan => const Color(0xFFFBBF24),
+      ReportCategory.banjir => AppTheme.sky,
+      ReportCategory.tutupJalan => AppTheme.warning,
       ReportCategory.listrikPadam => const Color(0xFFFACC15),
       ReportCategory.airPadam => const Color(0xFF2DD4BF),
       ReportCategory.macet => const Color(0xFFFB923C),
       ReportCategory.kebakaran => const Color(0xFFFB7185),
-      _ => const Color(0xFF94A3B8),
+      _ => AppTheme.textMuted,
     };
 
 IconData _reportIcon(String category) => switch (category) {
@@ -678,21 +679,21 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
             children: [
               const Text('Tulis Laporan',
                   style: TextStyle(
-                      color: Color(0xFFE2E8F0),
+                      color: AppTheme.textPrimary,
                       fontWeight: FontWeight.w800,
                       fontSize: 17)),
               const SizedBox(height: 4),
               Text(
                 'Laporan bebas boleh berulang — bukan barang susah ditulis ulang.',
                 style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5), fontSize: 11.5),
+                    color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
               ),
               const SizedBox(height: 14),
 
               const Text(
                 'Pilih kategori (bisa lebih dari satu)',
                 style: TextStyle(
-                  color: Color(0xFFE2E8F0),
+                  color: AppTheme.textPrimary,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                 ),
@@ -709,7 +710,7 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
                         size: 17,
                         color: _categories.contains(category)
                             ? _reportColor(category)
-                            : const Color(0xFF94A3B8),
+                            : AppTheme.textMuted,
                       ),
                       label: Text(ReportCategory.labels[category]!),
                       selected: _categories.contains(category),
@@ -736,7 +737,7 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
                 Text(
                   _locationLabel!,
                   style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                    color: AppTheme.textMuted,
                     fontSize: 12,
                   ),
                 ),
@@ -767,7 +768,7 @@ class _ReportFormSheetState extends ConsumerState<_ReportFormSheet> {
                 const SizedBox(height: 10),
                 Text(_message!,
                     style: const TextStyle(
-                        color: Color(0xFFEF4444), fontSize: 12.5)),
+                        color: AppTheme.danger, fontSize: 12.5)),
               ],
               const SizedBox(height: 16),
               SizedBox(
